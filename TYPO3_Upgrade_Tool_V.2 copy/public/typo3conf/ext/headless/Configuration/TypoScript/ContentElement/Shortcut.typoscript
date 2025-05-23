@@ -1,0 +1,21 @@
+tt_content.shortcut =< lib.contentElement
+tt_content.shortcut {
+    fields {
+        content {
+            fields {
+                shortcut =< lib.renderChildren
+                shortcut {
+                    10 = RECORDS
+                    10 {
+                        source.field = records
+                        tables = {$styles.content.shortcut.tables}
+                        conf {
+                            {$styles.content.shortcut.tables}.stdWrap.wrap = |###BREAK###
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

@@ -1,0 +1,26 @@
+@use "sass:math";
+
+.mask-edit {
+    padding: 10px;
+
+    @media screen and (min-width: $bp-edit-flex) {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    @media screen and (min-width: $bp-laptop) {
+        flex-wrap: nowrap;
+    }
+}
+
+.col-xl-6 {
+    @media screen and (min-width: $bp-desktop) {
+        width: 50%;
+    }
+}
+
+.col-xl-4 {
+    @media screen and (min-width: $bp-desktop) {
+        width: percentage(math.div(1, 3));
+    }
+}

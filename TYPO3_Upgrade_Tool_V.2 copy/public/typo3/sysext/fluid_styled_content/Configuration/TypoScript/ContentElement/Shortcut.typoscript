@@ -1,0 +1,24 @@
+# Insert records:
+# This element embeds other content elements.
+#
+# CType: shortcut
+
+tt_content.shortcut =< lib.contentElement
+tt_content.shortcut {
+    templateName = Shortcut
+
+    # Keep this, since the "conf" option can be used
+    variables.shortcuts = RECORDS
+    variables.shortcuts {
+        source.field = records
+        tables = {$styles.content.shortcut.tables}
+    }
+
+    stdWrap {
+        # @deprecated since v11: stdWrap.editIcons. Will be removed with v12.
+        editIcons = tt_content: header [header_layout], records
+        editIcons {
+            iconTitle.data = LLL:EXT:fluid_styled_content/Resources/Private/Language/FrontendEditing.xlf:editIcon.shortcut
+        }
+    }
+}

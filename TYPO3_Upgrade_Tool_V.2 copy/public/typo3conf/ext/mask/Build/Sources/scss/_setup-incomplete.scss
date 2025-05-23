@@ -1,0 +1,39 @@
+.mask-setup-incomplete {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+
+    &__content {
+        max-width: 750px;
+        margin: 0 auto 20px;
+    }
+
+    &__text {
+        text-align: center;
+        font-size: 22px;
+    }
+
+    h1 {
+        font-size: 50px;
+        line-height: 50px;
+    }
+
+    .fa-info-circle {
+        cursor: pointer;
+    }
+
+    &__form {
+        width: 850px;
+        max-width: 100%;
+        border: 1px solid $border-color;
+        padding: 20px;
+
+        .control-label {
+            padding-top: 7px;
+            margin-bottom: 0;
+            text-align: right;
+        }
+    }
+}

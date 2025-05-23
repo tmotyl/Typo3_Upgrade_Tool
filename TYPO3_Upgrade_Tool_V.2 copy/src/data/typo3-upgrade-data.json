@@ -1,0 +1,978 @@
+[
+  {
+    "version": "13.4.9",
+    "type": "lts",
+    "release_date": "2025-04-08 08:19:43 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "13.3.1",
+    "type": "regular",
+    "release_date": "2024-10-08 09:09:02 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "13.3",
+    "type": "sts",
+    "release_date": "2025-01-01",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "2.0+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "13.2.1",
+    "type": "regular",
+    "release_date": "2024-07-02 07:23:37 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "13.1.1",
+    "type": "regular",
+    "release_date": "2024-05-14 08:37:31 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "13.0.1",
+    "type": "regular",
+    "release_date": "2024-02-13 09:58:54 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "13.0",
+    "type": "dev",
+    "release_date": "2025-01-01",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.2 - 8.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "12.4.28",
+    "type": "lts",
+    "release_date": "2025-03-18 14:10:44 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "8.1 - 8.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "12.3.0",
+    "type": "regular",
+    "release_date": "2023-03-28 07:07:57 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.1 - 8.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "12.2.0",
+    "type": "regular",
+    "release_date": "2023-02-07 10:57:28 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.1 - 8.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "12.1.3",
+    "type": "regular",
+    "release_date": "2022-12-15 11:59:13 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.1 - 8.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "12.0.0",
+    "type": "regular",
+    "release_date": "2022-10-04 07:50:42 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "8.1 - 8.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "11.5.41",
+    "type": "lts",
+    "release_date": "2024-10-15 08:54:55 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.4 - 8.1",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "11.4.0",
+    "type": "lts",
+    "release_date": "2021-09-07 07:12:38 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.4 - 8.1",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "11.3.3",
+    "type": "regular",
+    "release_date": "2021-08-16 12:23:55 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.4 - 8.1",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "11.2.0",
+    "type": "regular",
+    "release_date": "2021-05-04 07:39:57 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.4 - 8.1",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "11.1.1",
+    "type": "regular",
+    "release_date": "2021-03-16 10:25:47 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.4 - 8.1",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "11.0.0",
+    "type": "regular",
+    "release_date": "2020-12-22 08:13:24 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.4 - 8.1",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "10.4.37",
+    "type": "lts",
+    "release_date": "2023-04-11 13:13:12 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "10.3.0",
+    "type": "regular",
+    "release_date": "2020-02-25 12:53:06 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "10.2.2",
+    "type": "regular",
+    "release_date": "2019-12-17 11:39:31 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "10.1.0",
+    "type": "regular",
+    "release_date": "2019-10-01 08:21:41 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "10.0.0",
+    "type": "regular",
+    "release_date": "2019-07-23 07:14:20 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.4",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "9.5.31",
+    "type": "lts",
+    "release_date": "2021-09-21 08:50:51 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "9.4.0",
+    "type": "lts",
+    "release_date": "2018-09-04 12:11:51 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "9.3.3",
+    "type": "regular",
+    "release_date": "2018-07-31 08:22:37 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "9.2.1",
+    "type": "regular",
+    "release_date": "2018-05-22 13:55:25 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "9.1.0",
+    "type": "regular",
+    "release_date": "2018-01-30 15:44:52 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "9.0.0",
+    "type": "regular",
+    "release_date": "2017-12-12 16:48:22 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.2 - 7.3",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "8.7.32",
+    "type": "regular",
+    "release_date": "2020-03-31 08:35:26 CEST",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.7-snapshot-20170404",
+    "type": "regular",
+    "release_date": "2017-04-04 08:48:12 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.6.1",
+    "type": "regular",
+    "release_date": "2017-02-28 10:51:55 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.5.1",
+    "type": "lts",
+    "release_date": "2017-01-03 11:19:18 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.4.1",
+    "type": "lts",
+    "release_date": "2016-11-22 10:44:47 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.3.1",
+    "type": "regular",
+    "release_date": "2016-09-13 10:12:21 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.2.1",
+    "type": "regular",
+    "release_date": "2016-07-19 10:46:35 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.1.2",
+    "type": "regular",
+    "release_date": "2016-05-24 10:10:34 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "8.0.1",
+    "type": "regular",
+    "release_date": "2016-04-12 09:36:52 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0 - 7.2",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "7.6.32",
+    "type": "regular",
+    "release_date": "2018-12-11 12:45:47 CET",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "7.5.0",
+    "type": "lts",
+    "release_date": "2015-09-29 12:26:04 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "7.4.0",
+    "type": "lts",
+    "release_date": "2015-08-04 13:13:37 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "7.3.1",
+    "type": "regular",
+    "release_date": "2015-07-01 14:29:14 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "7.2.0",
+    "type": "regular",
+    "release_date": "2015-04-28 12:28:02 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "7.1.0",
+    "type": "regular",
+    "release_date": "2015-02-24 14:43:06 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "7.0.2",
+    "type": "regular",
+    "release_date": "2014-12-10 10:47:44 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "5.5 - 7.0",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "6.2.31",
+    "type": "regular",
+    "release_date": "2017-04-18 16:26:13 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "6.1.12",
+    "type": "regular",
+    "release_date": "2014-10-22 08:43:17 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "6.0.14",
+    "type": "regular",
+    "release_date": "2014-05-22 08:02:17 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "4.7.20",
+    "type": "regular",
+    "release_date": "2014-10-22 08:34:45 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.6.18",
+    "type": "regular",
+    "release_date": "2013-03-07 09:13:33 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.5.40",
+    "type": "lts",
+    "release_date": "2015-02-19 09:10:26 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.4.15",
+    "type": "lts",
+    "release_date": "2012-04-17 09:19:25 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.3.14",
+    "type": "regular",
+    "release_date": "2011-09-14 09:36:58 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.2.17",
+    "type": "regular",
+    "release_date": "2010-12-28 11:50:57 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.1.15",
+    "type": "regular",
+    "release_date": "2010-08-06 10:42:13 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "4.0.13",
+    "type": "regular",
+    "release_date": "2009-07-02 22:00:22 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": true
+  },
+  {
+    "version": "3.8.1",
+    "type": "regular",
+    "release_date": "2005-11-14 08:33:29 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "3.7.1",
+    "type": "regular",
+    "release_date": "2005-05-23 17:56:14 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "3.6.2",
+    "type": "regular",
+    "release_date": "2004-07-12 23:56:33 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": false,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "3.5.0",
+    "type": "lts",
+    "release_date": "2003-02-18 08:10:14 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2027-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  },
+  {
+    "version": "3.3.0",
+    "type": "regular",
+    "release_date": "2002-06-03 12:01:07 UTC",
+    "support": {
+      "active_until": "2026-01-01",
+      "security_until": "2026-01-01"
+    },
+    "requirements": {
+      "php": "7.0+",
+      "mysql": "5.5+ / MySQL 5.5+",
+      "composer": "1.5+"
+    },
+    "db_changes": true,
+    "install_tool_migrations": false
+  }
+]

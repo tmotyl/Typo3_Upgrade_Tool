@@ -1,0 +1,3 @@
+#!/usr/bin/env php
+<?php
+require __DIR__ . '/Scripts/typo3-console.php';

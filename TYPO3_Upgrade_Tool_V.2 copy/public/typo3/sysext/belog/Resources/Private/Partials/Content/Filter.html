@@ -1,0 +1,141 @@
+<html
+    xmlns:f="http://typo3.org/ns/TYPO3/CMS/Fluid/ViewHelpers"
+    xmlns:core="http://typo3.org/ns/TYPO3/CMS/Core/ViewHelpers"
+    xmlns:belog="http://typo3.org/ns/TYPO3/CMS/Belog/ViewHelpers"
+    data-namespace-typo3-fluid="true">
+
+<f:comment>
+    This is an ugly workaround.
+    The function module in Web->Info already renders a form tag, and there is
+    no easy way to circumvent this. The page id is needed for the info module
+    that is not extbase based to figure the permissions. Thus, we have to add
+    the page Id manually to hint the info module about that.
+</f:comment>
+<f:if condition="{isSubmoduleLayout}">
+    <input type="hidden" name="id" value="{constraint.pageId}" />
+</f:if>
+
+<f:form object="{constraint}" action="list" name="constraint">
+    <div class="row row-cols-auto align-items-end g-3">
+
+        <div class="col">
+            <label for="belog-users" class="form-label"><f:translate key="users" /></label>
+            <f:form.select
+                property="userOrGroup"
+                options="{userGroups}"
+                class="form-select"
+                id="belog-users"
+            />
+        </div>
+
+        <div class="col">
+            <label for="belog-max" class="form-label"><f:translate key="max" /></label>
+            <belog:form.translateLabelSelect
+                property="number"
+                options="{settings.selectableNumberOfLogEntries}"
+                optionLabelPrefix="LLL:EXT:belog/Resources/Private/Language/locallang.xlf:"
+                class="form-select"
+                id="belog-max"
+            />
+        </div>
+
+        <f:if condition="{showWorkspaceSelector}">
+            <div class="col">
+                <label for="belog-workspaces" class="form-label"><f:translate key="workspace" /></label>
+                <f:form.select
+                    property="workspaceUid"
+                    options="{workspaces}"
+                    class="form-select"
+                    id="belog-workspaces"
+                />
+            </div>
+        </f:if>
+
+        <f:if condition="{isSubmoduleLayout}">
+            <div class="col">
+                <label for="belog-depth" class="form-label"><f:translate key="chLog_menuDepth" /></label>
+                <f:form.select
+                    property="depth"
+                    options="{pageDepths}"
+                    class="form-select"
+                    id="belog-depth"
+                />
+            </div>
+        </f:if>
+
+        <div class="col">
+            <label for="belog-channel" class="form-label"><f:translate key="channel" /></label>
+            <f:form.select
+                property="channel"
+                options="{channels}"
+                prependOptionLabel="{f:translate(key='all')}"
+                prependOptionValue=""
+                class="form-select"
+                id="belog-channel"
+                value="{channel}"
+            />
+        </div>
+
+        <div class="col">
+            <label for="belog-level" class="form-label"><f:translate key="levels" /></label>
+            <f:form.select
+                property="level"
+                options="{levels}"
+                prependOptionLabel="{f:translate(key='all')}"
+                prependOptionValue=""
+                class="form-select"
+                id="belog-level"
+                value="{level}"
+            />
+        </div>
+
+        <div class="col">
+            <label for="manualDateStart" class="form-label"><f:translate key="LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:from" /></label>
+            <div class="input-group">
+                <f:form.textfield
+                    name="manualDateStart"
+                    value="{f:if(condition: constraint.manualDateStart, then: \"{f:format.date(format:'{settings.dateTimeFormat}', date: '{constraint.manualDateStart}')}\")}"
+                    id="manualDateStart"
+                    additionalAttributes="{'autocomplete': 'off'}"
+                    class="form-control t3js-datetimepicker t3js-clearable"
+                    data="{date-type: 'datetime'}"
+                />
+                <f:form.hidden
+                    property="manualDateStart"
+                    value="{f:if(condition: constraint.manualDateStart, then: \"{f:format.date(format:'c', date: '{constraint.manualDateStart}')}\")}"
+                />
+                <label class="mb-0 btn btn-default" for="manualDateStart">
+                    <core:icon identifier="actions-calendar" />
+                </label>
+            </div>
+        </div>
+
+        <div class="col">
+            <label for="manualDateStop" class="form-label"><f:translate key="LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:to" /></label>
+            <div class="input-group">
+                <f:form.textfield
+                    name="manualDateStop"
+                    value="{f:format.date(format:'{settings.dateTimeFormat}', date: '{constraint.manualDateStop}')}"
+                    additionalAttributes="{'autocomplete': 'off'}"
+                    id="manualDateStop"
+                    class="form-control t3js-datetimepicker t3js-clearable"
+                    data="{date-type: 'datetime'}"
+                />
+                <f:form.hidden
+                    property="manualDateStop"
+                    value="{f:format.date(format:'c', date: '{constraint.manualDateStop}')}"
+                />
+                <label class="mb-0 btn btn-default" for="manualDateStop">
+                    <core:icon identifier="actions-calendar" />
+                </label>
+            </div>
+        </div>
+
+        <div class="col">
+            <f:form.button type="submit" name="operation" value="filter" class="btn btn-light">{f:translate(key: 'set')}</f:form.button>
+            <f:form.button type="submit" name="operation" value="reset-filters" class="btn btn-link">{f:translate(key: 'reset')}</f:form.button>
+        </div>
+    </div>
+</f:form>
+
+</html>

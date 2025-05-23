@@ -1,0 +1,15 @@
+# snippet to render content elements
+lib.tx_mask.content = RECORDS
+lib.tx_mask.content {
+    tables = tt_content
+    source.current = 1
+    dontCheckPid = 1
+}
+
+# mask content elements are rendered with this snippet
+lib.maskContentElement = FLUIDTEMPLATE
+lib.maskContentElement {
+    dataProcessing {
+        100 = MASK\Mask\DataProcessing\MaskProcessor
+    }
+}

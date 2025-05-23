@@ -1,0 +1,72 @@
+{
+    "name": "friendsoftypo3/fontawesome-provider",
+    "description": "Integrates legacy FontawesomeIconProvider and FontAwesome 4.7",
+    "license": "GPL-2.0+",
+    "type": "typo3-cms-extension",
+    "authors": [
+        {
+            "name": "Andreas Fernandez",
+            "email": "a.fernandez@scripting-base.de"
+        }
+    ],
+    "require": {
+        "ext-simplexml": "*",
+        "typo3/cms-backend": "^11.5 || ^12.0 || ^13.0 || 13.*.*@dev",
+        "typo3/cms-core": "^11.5 || ^12.0 || ^13.0 || 13.*.*@dev"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.14",
+        "phpstan/phpstan": "^1.9",
+        "phpstan/phpstan-phpunit": "^1.3",
+        "phpunit/phpunit": "^10.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "FriendsOfTYPO3\\FontawesomeProvider\\": "Classes/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "typo3/class-alias-loader": true,
+            "typo3/cms-composer-installers": true
+        },
+        "bin-dir": ".build/bin",
+        "optimize-autoloader": true,
+        "public-dir": ".build/public",
+        "sort-packages": true,
+        "vendor-dir": ".build/vendor"
+    },
+    "extra": {
+        "typo3/class-alias-loader": {
+            "class-alias-maps": [
+                "Migrations/Code/ClassAliasMap.php"
+            ]
+        },
+        "typo3/cms": {
+            "Package": {
+                "serviceProvider": "FriendsOfTYPO3\\FontawesomeProvider\\ServiceProvider"
+            },
+            "app-dir": ".build",
+            "extension-key": "fontawesome_provider",
+            "web-dir": ".build/public"
+        }
+    },
+    "scripts": {
+        "cgl": [
+            "php -r \"is_dir('.cache') || mkdir('.cache');\"",
+            "php-cs-fixer fix --config=Build/php-cs-fixer.php -v --dry-run"
+        ],
+        "cgl:fix": [
+            "php -r \"is_dir('.cache') || mkdir('.cache');\"",
+            "php-cs-fixer fix --config=Build/php-cs-fixer.php"
+        ],
+        "phpstan": [
+            "phpstan analyze --configuration Build/phpstan.neon"
+        ],
+        "tests": [
+            "phpunit -c Build/phpunit.xml"
+        ]
+    }
+}

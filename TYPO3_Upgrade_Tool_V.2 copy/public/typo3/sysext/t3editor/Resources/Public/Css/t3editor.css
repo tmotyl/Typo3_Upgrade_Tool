@@ -1,0 +1,13 @@
+/*!
+ * This file is part of the TYPO3 CMS project.
+ * 
+ * It is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, either version 2
+ * of the License, or any later version.
+ * 
+ * For the full copyright and license information, please read the
+ * LICENSE.txt file that was distributed with this source code.
+ * 
+ * The TYPO3 project - inspiring people to share!
+ */
+typo3-t3editor-codemirror{border:1px solid transparent}typo3-t3editor-codemirror textarea{width:100%}typo3-t3editor-codemirror *+textarea{display:none}typo3-t3editor-codemirror .CodeMirror-fullscreen{top:64px!important}typo3-t3editor-codemirror .CodeMirror-panel{background:#f7f7f7;padding:3px 6px;font-size:.85em}typo3-t3editor-codemirror .CodeMirror-panel-bottom{border-top:1px solid #ddd}typo3-t3editor-codemirror div.CodeMirror span.CodeMirror-matchingbracket{color:#6ca52b}typo3-t3editor-codemirror div.CodeMirror span.CodeMirror-markText{background-color:#e8a33d}.has-change typo3-t3editor-codemirror{border-color:#6daadf}typo3-t3editor-codemirror[autoheight] .CodeMirror{height:auto!important}
