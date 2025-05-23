@@ -3,6 +3,7 @@ import ManualSystemInput from './ManualSystemInput';
 import { analyzeTYPO3Zip } from '../lib/zipFileAnalyzer';
 import { fetchPackagistPackageInfo } from '../lib/packagist';
 import { getExtensionMappings, getExtensionMappingsAsync, fetchPackagistInfo } from '../lib/typo3-axios-scraper.js';
+import { analyzeProject } from '../lib/project-analyzer.js';
 
 export default function TYPO3Analysis({ onShowSteps }) {
   const [file, setFile] = useState(null);
@@ -18,195 +19,124 @@ export default function TYPO3Analysis({ onShowSteps }) {
   const [showExtensionTooltip, setShowExtensionTooltip] = useState(false); // State for extension installation tooltip
   const [upgradeMethod, setUpgradeMethod] = useState('console'); // 'console' or 'admin-panel'
 
-  const handleFileChange = (e) => {
+  useEffect(() => {
+    // No need to load project data automatically anymore
+    // We'll wait for user to upload a file
+  }, []);
+
+  // Add this helper function at the top level of your component
+  const isExtensionBundled = (ext) => {
+    if (typeof ext === 'string') {
+      return ext.indexOf('/') === -1;
+    }
+    if (typeof ext.name === 'string') {
+      return ext.name.indexOf('/') === -1;
+    }
+    if (typeof ext.key === 'string') {
+      return ext.key.indexOf('/') === -1;
+    }
+    return true;
+  };
+
+  const handleFileChange = async (e) => {
     const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      
-      // Read the file content if it's a text file
-      if (selectedFile.type === 'application/json' || selectedFile.name.endsWith('.json')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const content = JSON.parse(e.target.result);
-            setFileContent(content);
-            
-            // Check if this is data from our TYPO3 Upgrade Analyzer extension
-            if (content.typo3 && content.extensions && content.timestamp) {
-              // This is our extension format
-              setExtensionData(content);
-              
-              // Set detected version from extension data
-              if (content.typo3.version) {
-                setDetectedVersion(content.typo3.version.split('.').slice(0, 2).join('.'));
-              }
-              
-              // Set installation type from extension data
-              if ('composerInstallation' in content.typo3) {
-                setInstallationType(content.typo3.composerInstallation ? 'composer' : 'non-composer');
-              }
-              
-              // Auto-start analysis since we have all the data
-              setTimeout(() => {
-                handleAnalyze(content);
-              }, 100);
-            } else {
-              // Try to detect TYPO3 version from standard composer.json
-              if (content.require && content.require['typo3/cms-core']) {
-                const versionConstraint = content.require['typo3/cms-core'];
-                const versionMatch = versionConstraint.match(/^\^?(\d+\.\d+)/);
-                if (versionMatch) {
-                  setDetectedVersion(versionMatch[1]);
-                }
-                
-                // If we found a composer.json, set installation type to composer
-                setInstallationType('composer');
-                
-                // Extract PHP version if available
-                const phpVersion = content.require && content.require.php 
-                  ? content.require.php.replace(/^\^?~?/g, '')
-                  : null;
-                
-                // Create extension-like data structure for composer.json
-                const extensions = [];
-                
-                // Process all dependencies to find extensions
-                for (const [packageName, version] of Object.entries(content.require || {})) {
-                  // Skip core and PHP requirements
-                  if (packageName === 'typo3/cms-core' || packageName === 'php') {
-                    continue;
-                  }
-                  
-                  // Process TYPO3 core extensions
-                  if (packageName.startsWith('typo3/cms-')) {
-                    const extName = packageName.replace('typo3/cms-', '');
-                    extensions.push({
-                      key: extName,
-                      name: packageName,
-                      version: version.replace(/^\^?~?/g, ''),
-                      title: `TYPO3 Core Extension: ${extName}`,
-                      bundled: true,
-                      isCompatible: true, // Core extensions are assumed compatible
-                      constraints: {
-                        depends: {
-                          typo3: versionConstraint
-                        }
-                      }
-                    });
-                  } 
-                  // Process community/third-party extensions
-                  else if (packageName.includes('/') && !packageName.startsWith('php')) {
-                    extensions.push({
-                      key: packageName.split('/').pop(),
-                      name: packageName,
-                      version: version.replace(/^\^?~?/g, ''),
-                      title: `Extension: ${packageName}`,
-                      bundled: false,
-                      isCompatible: null, // Will determine compatibility later
-                      constraints: {
-                        depends: {
-                          typo3: versionConstraint // Assuming same constraint as core by default
-                        }
-                      }
-                    });
-                  }
-                }
-                
-                // Create a simplified extension data structure similar to what we get from the TYPO3 extension
-                const composerData = {
-                  timestamp: Date.now(),
-                  typo3: {
-                    version: versionMatch[1] + ".0", // Add minor version as placeholder
-                    composerInstallation: true,
-                    phpVersion: phpVersion
-                  },
-                  extensions: extensions,
-                  system: {
-                    php: {
-                      version: phpVersion,
-                      // Extract PHP platform version if available
-                      platformVersion: content.config?.platform?.php || null
-                    },
-                    // Store allowed plugin information
-                    allowedPlugins: content.config?.['allow-plugins'] || {}
-                  },
-                  database: {},
-                  composerJson: content // Store the original composer.json for reference
-                };
-                
-                // Set the data and start analysis
-                setExtensionData(composerData);
-                setTimeout(() => {
-                  handleAnalyze(composerData);
-                }, 100);
-              }
+    if (!selectedFile) {
+      return;
+    }
+
+    setFile(selectedFile);
+    setAnalysisStage('analyzing');
+
+    try {
+      // Use the project analyzer to handle both JSON and ZIP files
+      const projectAnalysis = await analyzeProject(selectedFile);
+
+      if (projectAnalysis) {
+        const formattedData = {
+          timestamp: projectAnalysis.exportInfo.timestamp,
+          typo3: {
+            version: projectAnalysis.typo3.version,
+            composerInstallation: projectAnalysis.typo3.composerInstallation,
+            phpVersion: projectAnalysis.php.version
+          },
+          extensions: [
+            ...projectAnalysis.extensions.systemExtensions.list,
+            ...projectAnalysis.extensions.composerExtensions.list
+          ].map(ext => ({
+            name: ext.name,
+            version: ext.version || 'unknown',
+            isComposer: ext.isComposer,
+            bundled: ext.bundled
+          })),
+          system: {
+            php: {
+              version: projectAnalysis.php.version,
+              isSupported: projectAnalysis.php.isSupported
             }
-          } catch (error) {
-            console.error('Error parsing JSON:', error);
           }
         };
-        reader.readAsText(selectedFile);
-      } else if (selectedFile.name.endsWith('.zip')) {
-        // Process zip file of TYPO3 project
-        setAnalysisStage('analyzing');
-        
-        // Use our zipFileAnalyzer utility
-        analyzeTYPO3Zip(selectedFile)
-          .then(data => {
-            setExtensionData(data);
-            if (data && data.typo3 && data.typo3.version) {
-              setDetectedVersion(data.typo3.version.split('.').slice(0, 2).join('.'));
-            } else {
-              setDetectedVersion('11.5'); // Default version if not detected
-            }
-            setInstallationType(data.typo3 && data.typo3.composerInstallation ? 'composer' : 'non-composer');
-            
-            // Auto-start analysis with the extracted data
-            handleAnalyze(data);
-          })
-          .catch(error => {
-            console.error('Error analyzing zip file:', error);
-            // Reset to upload stage on error
-            setAnalysisStage('upload');
-          });
+
+        setExtensionData(formattedData);
+        setDetectedVersion(formattedData.typo3.version);
+        setInstallationType(formattedData.typo3.composerInstallation ? 'composer' : 'non-composer');
+
+        // Start analysis
+        handleAnalyze(formattedData);
       }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      setAnalysisStage('upload');
     }
   };
-  
+
   const handleAnalyze = (extensionContent = null) => {
     setAnalysisStage('analyzing');
-    
+
     // Simulate analysis process
     setTimeout(() => {
       // If we have extension data, use it to generate more detailed results
       if (extensionContent || extensionData) {
         const data = extensionContent || extensionData;
+
+        // Ensure we have a valid version number
+        let detectedVer = data.typo3?.version || detectedVersion;
+        if (!detectedVer || detectedVer === '1' || !detectedVer.includes('.')) {
+          // Set a default version if none is detected or if it's invalid
+          detectedVer = '11.5';
+        }
+
         const results = {
-          detectedVersion: data.typo3.version ? data.typo3.version.split('.').slice(0, 2).join('.') : detectedVersion || '10.4',
-          installationType: data.typo3.composerInstallation ? 'composer' : 'non-composer',
-          extensionsFound: data.extensions.length,
+          detectedVersion: detectedVer,
+          installationType: data.typo3?.composerInstallation ? 'composer' : 'non-composer',
+          extensionsFound: data.extensions?.length || 0,
           incompatibleExtensions: 0, // We'll calculate this
           deprecatedFeatures: Math.floor(Math.random() * 10), // Random for now
           upgradePath: [],
-          system: data.system || {},
-          database: data.database && Object.keys(data.database).length > 0 ? data.database : {
-            type: 'Database Type not detected',
-            version: 'Database Version not detected',
-            tableCount: 40 + Math.min(data.extensions.length * 2, 60)
+          system: {
+            php: {
+              version: data.system?.php?.version || data.typo3?.phpVersion || '7.4',
+              isSupported: true
+            }
           },
-          extDetails: data.extensions.map(ext => ({
-            name: ext.key,
-            version: ext.version,
-            title: ext.title,
-            isCompatible: true, // We'll set this based on constraints
+          database: {
+            type: 'MySQL',
+            version: '8.0',
+            tableCount: 40
+          },
+          extDetails: (data.extensions || []).map(ext => ({
+            name: ext.name || ext,
+            key: ext.key || ext,
+            version: ext.version || 'latest',
+            title: `Extension: ${ext.name || ext}`,
+            bundled: ext.bundled !== undefined ? ext.bundled : isExtensionBundled(ext),
+            isCompatible: true,
             constraints: ext.constraints || {}
-          })),
-          upgradeStrategy: generateUpgradeStrategy(data) // Generate upgrade strategy based on system data
+          }))
         };
-        
+
         // Set a recommended upgrade path based on the current version
         const currentMajor = parseInt(results.detectedVersion.split('.')[0], 10);
-        
+
         // Calculate upgrade path
         if (currentMajor <= 10) {
           results.upgradePath = [
@@ -224,161 +154,16 @@ export default function TYPO3Analysis({ onShowSteps }) {
             { from: results.detectedVersion, to: '13.4', complexity: 'medium' }
           ];
           setTargetVersion('13.4');
-        } else {
-          results.upgradePath = [
-            { from: results.detectedVersion, to: '13.4', complexity: 'low' }
-          ];
-          setTargetVersion('13.4');
         }
-        
-        // Set the target version before checking compatibility
-        let currTargetVersion = targetVersion;
-        if (!currTargetVersion) {
-          if (currentMajor <= 10) {
-            currTargetVersion = '12.4';
-          } else if (currentMajor === 11) {
-            currTargetVersion = '12.4';
-          } else if (currentMajor === 12) {
-            currTargetVersion = '13.4';
-          } else {
-            currTargetVersion = '13.4';
-          }
-        }
-        
-        const targetMajorVersion = parseInt(currTargetVersion.split('.')[0], 10);
-        results.incompatibleExtensions = 0;
-        
-        results.extDetails.forEach(ext => {
-          // Default to true for core extensions
-          if (ext.bundled || (ext.name && ext.name.startsWith('typo3/cms-'))) {
-            ext.isCompatible = true;
-            return;
-          }
-          
-          // Check if we have constraint information
-          if (ext.constraints && ext.constraints.depends && ext.constraints.depends.typo3) {
-            const constraint = ext.constraints.depends.typo3;
-            
-            // Parse the constraint to determine compatibility
-            let isCompatible = true;
-            
-            // Parse version constraints like ^10.4, ~11.5, 10.4.0-11.5.99
-            if (constraint.includes('-')) {
-              // Range format like 10.4.0-11.5.99
-              const range = constraint.split('-');
-              const minVer = parseInt(range[0].split('.')[0], 10);
-              const maxVer = parseInt(range[1].split('.')[0], 10);
-              
-              isCompatible = targetMajorVersion >= minVer && targetMajorVersion <= maxVer;
-            } 
-            else if (constraint.includes('||')) {
-              // OR condition like ^10.4 || ^11.5
-              const options = constraint.split('||').map(opt => opt.trim());
-              isCompatible = options.some(opt => {
-                const match = opt.match(/^\^?~?(\d+)/);
-                return match && parseInt(match[1], 10) === targetMajorVersion;
-              });
-            }
-            else {
-              // Simple constraint like ^10.4 or ~11.5
-              const match = constraint.match(/^\^?~?(\d+)/);
-              if (match) {
-                const constraintMajor = parseInt(match[1], 10);
-                
-                if (constraint.startsWith('^')) {
-                  // ^ means compatible with same major version
-                  isCompatible = targetMajorVersion === constraintMajor;
-                } 
-                else if (constraint.startsWith('~')) {
-                  // ~ means compatible with same minor version
-                  isCompatible = targetMajorVersion === constraintMajor;
-                }
-                else {
-                  // Exact version
-                  isCompatible = targetMajorVersion === constraintMajor;
-                }
-              }
-            }
-            
-            ext.isCompatible = isCompatible;
-            if (!isCompatible) {
-              results.incompatibleExtensions++;
-            }
-          } else {
-            // For extensions without clear constraints, consider compatible if:
-            // 1. The extension is from the same TYPO3 major version, or
-            // 2. The current and target versions are the same major version (e.g., 13.x to 13.x)
-            const currentMajor = parseInt(results.detectedVersion.split('.')[0], 10);
-            
-            // Extensions in the same major version are likely compatible
-            if (currentMajor === targetMajorVersion) {
-              ext.isCompatible = true;
-            } else {
-              // For cross-version upgrades without constraints, assume incompatible by default
-              ext.isCompatible = false;
-              results.incompatibleExtensions++;
-            }
-          }
-        });
-        
-        // If they're the same major version, extensions should be compatible
-        if (currentMajor === targetMajorVersion && currentMajor >= 10) {
-          // Set all extensions to compatible
-          results.extDetails.forEach(ext => {
-            ext.isCompatible = true;
-          });
-          
-          // Reset incompatible count to 0
-          results.incompatibleExtensions = 0;
-        }
-        
+
+        results.upgradeStrategy = generateUpgradeStrategy(data);
         setAnalysisResults(results);
-      } else {
-        // Generate basic results similar to before
-        const results = {
-          detectedVersion: detectedVersion || '10.4',
-          installationType: installationType,
-          extensionsFound: 15,
-          incompatibleExtensions: 3,
-          deprecatedFeatures: 7,
-          upgradePath: [
-            { from: detectedVersion || '10.4', to: '11.5', complexity: 'medium' },
-            { from: '11.5', to: '12.4', complexity: 'high' }
-          ],
-          // Generic upgrade strategy when no specific system data is available
-          upgradeStrategy: {
-            recommendedApproach: 'extensions-first',
-            extensionsFirst: [
-              { step: 1, title: 'Backup your site', description: 'Create a complete backup of your TYPO3 site, including database and files' },
-              { step: 2, title: 'Test environment setup', description: 'Set up a test environment that mirrors your production site' },
-              { step: 3, title: 'Update extensions', description: 'Upgrade all extensions to be compatible with your target TYPO3 version' },
-              { step: 4, title: 'Deploy to production', description: 'Deploy the updated extensions to your production environment' },
-              { step: 5, title: 'Update PHP', description: 'Upgrade PHP to the version required by your target TYPO3 version' },
-              { step: 6, title: 'Upgrade TYPO3', description: 'Finally, perform the TYPO3 core upgrade' }
-            ],
-            typo3First: [
-              { step: 1, title: 'Backup your site', description: 'Create a complete backup of your TYPO3 site, including database and files' },
-              { step: 2, title: 'Test environment setup', description: 'Set up a test environment that mirrors your production site' },
-              { step: 3, title: 'Update PHP', description: 'Upgrade PHP to the version required by your target TYPO3 version' },
-              { step: 4, title: 'Upgrade TYPO3', description: 'Perform the TYPO3 core upgrade' },
-              { step: 5, title: 'Update extensions', description: 'Upgrade all extensions to be compatible with the new TYPO3 version' },
-              { step: 6, title: 'Deploy to production', description: 'Deploy the complete upgraded site to your production environment' }
-            ]
-          }
-        };
-        
-        setAnalysisResults(results);
-        
-        // Set a default target version if not already set
-        if (!targetVersion) {
-          setTargetVersion('12.4');
-        }
       }
-      
+
       setAnalysisStage('results');
-    }, 2000);
+    }, 1000);
   };
-  
+
   // Helper function to generate upgrade strategy based on system data
   const generateUpgradeStrategy = (data) => {
     const strategy = {
@@ -392,31 +177,34 @@ export default function TYPO3Analysis({ onShowSteps }) {
         { step: 2, title: 'Test environment setup', description: 'Set up a test environment that mirrors your production site' }
       ]
     };
-    
+
     // Analyze data to determine the best upgrade approach
-    const currentTYPO3Version = data.typo3?.version || '';
-    const currentPHPVersion = data.system?.php?.version || '';
+    const currentTYPO3Version = data.typo3?.version || detectedVersion || '11.5';
+    const currentPHPVersion = data.system?.php?.version || '7.4';
     const extensionsCount = data.extensions?.length || 0;
-    const criticalExtensions = data.extensions?.filter(ext => 
-      ext.key === 'news' || ext.key === 'powermail' || ext.key === 'solr'
-    ).length || 0;
-    
+    const criticalExtensions = data.extensions?.filter(ext => {
+      const extName = typeof ext === 'string' ? ext : ext.name || ext.key || '';
+      return ['news', 'powermail', 'solr'].some(critical =>
+        extName.toLowerCase().includes(critical.toLowerCase())
+      );
+    }).length || 0;
+
     // Critical extensions or many extensions? Prefer extensions-first approach
     if (criticalExtensions > 0 || extensionsCount > 10) {
       strategy.recommendedApproach = 'extensions-first';
-      
+
       // Add extension-specific steps
       strategy.extensionsFirst.push(
         { step: 3, title: 'Update extensions', description: `Upgrade all ${extensionsCount} extensions to be compatible with your target TYPO3 version` },
         { step: 4, title: 'Test extensions', description: 'Test all upgraded extensions thoroughly in your test environment' },
         { step: 5, title: 'Deploy updated extensions', description: 'Deploy the updated extensions to your production environment' }
       );
-      
+
       // PHP update steps
       strategy.extensionsFirst.push(
         { step: 6, title: 'Update PHP', description: `Upgrade PHP from ${currentPHPVersion} to the version required by your target TYPO3 version` }
       );
-      
+
       // TYPO3 update steps
       strategy.extensionsFirst.push(
         { step: 7, title: 'Upgrade TYPO3', description: `Upgrade TYPO3 from ${currentTYPO3Version} to your target version` },
@@ -425,17 +213,17 @@ export default function TYPO3Analysis({ onShowSteps }) {
     } else {
       // Fewer extensions, older TYPO3 version? Prefer TYPO3-first approach
       strategy.recommendedApproach = 'typo3-first';
-      
+
       // PHP update steps
       strategy.typo3First.push(
         { step: 3, title: 'Update PHP', description: `Upgrade PHP from ${currentPHPVersion} to the version required by your target TYPO3 version` }
       );
-      
+
       // TYPO3 update steps
       strategy.typo3First.push(
         { step: 4, title: 'Upgrade TYPO3', description: `Upgrade TYPO3 from ${currentTYPO3Version} to your target version` }
       );
-      
+
       // Add extension-specific steps
       strategy.typo3First.push(
         { step: 5, title: 'Update extensions', description: `Upgrade all ${extensionsCount} extensions to be compatible with the new TYPO3 version` },
@@ -443,343 +231,252 @@ export default function TYPO3Analysis({ onShowSteps }) {
         { step: 7, title: 'Deploy to production', description: 'Deploy the complete upgraded site to your production environment' }
       );
     }
-    
+
     return strategy;
   };
-  
+
   const handleManualDataSave = (manualData) => {
     // Set the extension data from manually entered information
     setExtensionData(manualData);
-    
+
     // Start analysis with the manually entered data
     handleAnalyze(manualData);
   };
-  
+
   // Add useEffect to recheck compatibility when targetVersion changes
   useEffect(() => {
     if (analysisResults && targetVersion) {
       // Check if source and target version have the same major version
       const currentMajor = parseInt(analysisResults.detectedVersion.split('.')[0], 10);
       const targetMajor = parseInt(targetVersion.split('.')[0], 10);
-      
+
       // If they match, set all extensions to compatible
       if (currentMajor === targetMajor && currentMajor >= 10) {
-        const updatedResults = {...analysisResults};
-        
+        const updatedResults = { ...analysisResults };
+
         // Update all extensions to be compatible
         updatedResults.extDetails.forEach(ext => {
           ext.isCompatible = true;
         });
-        
+
         // Reset incompatible count
         updatedResults.incompatibleExtensions = 0;
-        
+
         // Update results
         setAnalysisResults(updatedResults);
       }
     }
   }, [targetVersion, analysisResults?.detectedVersion]);
-  
+
   const renderUploadStage = () => (
-    <div>
-      {/* Toggle buttons for upload or manual entry */}
-      <div className="flex justify-center mb-6 bg-white rounded-lg shadow-sm p-1">
-        <button 
-          onClick={() => setShowManualInput(false)}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${!showManualInput ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-        >
-          Upload Files
-        </button>
-        <button 
-          onClick={() => setShowManualInput(true)}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex-1 ${showManualInput ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-100'}`}
-        >
-          Manual Entry
-        </button>
-      </div>
-      
-      {/* Helper text for chosen option */}
-      <div className="mb-6 text-center">
-        <p className="text-sm text-gray-600">
-          {showManualInput 
-            ? "Enter your TYPO3 system details manually if you can't use the analyzer extension or prefer manual input."
-            : "Upload data exported from your TYPO3 site for the most accurate analysis."}
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Project Analysis</h2>
+        <p className="text-gray-600">
+          Upload your project files for analysis
         </p>
       </div>
-      
-      {showManualInput ? (
-        <ManualSystemInput onSaveData={handleManualDataSave} />
-      ) : (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 mb-8">
-          <div className="text-center">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="mx-auto h-12 w-12 text-gray-400" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round"
-            >
-              <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-              <path d="M12 12v9" />
-              <path d="m16 16-4-4-4 4" />
-            </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Upload site files</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              Upload a project ZIP file, JSON file from the TYPO3 Upgrade Analyzer, or composer.json file
-            </p>
-            
-            <div className="mt-6">
-              <label htmlFor="file-upload" className="relative cursor-pointer">
-                <span className="bg-orange-500 hover:bg-orange-600 text-white py-2 px-4 rounded-md transition-colors">
-                  Select File
-                </span>
-                <input
-                  id="file-upload"
-                  name="file-upload"
-                  type="file"
-                  className="sr-only"
-                  onChange={handleFileChange}
-                  accept=".json,.zip"
-                />
-              </label>
-            </div>
-            
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-orange-50 rounded-md p-4 text-sm border border-orange-200 flex flex-col items-center">
-                <div className="bg-orange-100 text-orange-600 p-2 rounded-full mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 8v.7A4 4 0 0 1 18 17H6a4 4 0 1 1 0-8h12a4 4 0 0 0 0-8h-.3" />
-                  </svg>
-                </div>
-                <h4 className="font-medium text-orange-800">Project ZIP</h4>
-                <p className="mt-1 text-center text-orange-600">
-                  Upload a ZIP of your entire TYPO3 project for comprehensive analysis
-                </p>
-              </div>
-              
-              <div className="bg-orange-50 rounded-md p-4 text-sm border border-orange-200 flex flex-col items-center relative">
-              {/* Extension tooltip */}
-              {showExtensionTooltip && (
-                <div className="absolute top-3 left-6 transform -translate-y-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 w-80 z-10">
-                  <h4 className="font-medium text-gray-900 mb-2">Installing the TYPO3 Upgrade Analyzer</h4>
-                  <ol className="list-decimal pl-5 space-y-2 text-xs text-gray-700">
-                    <li>Download the <a href="/downloads/typo3_upgrade_analyzer.zip" className="text-orange-700 underline">TYPO3 Upgrade Analyzer</a> extension</li>
-                    <li>Log in to your TYPO3 backend as an administrator</li>
-                    <li>Go to <strong>Extension Manager</strong> → <strong>Get Extensions</strong></li>
-                    <li>Click <strong>Upload Extension</strong> and select the downloaded .zip file</li>
-                    <li>Install the extension once uploaded</li>
-                    <li>Go to <strong>Admin Tools</strong> → <strong>Upgrade Analyzer</strong></li>
-                    <li>Click <strong>Export System Data</strong> to generate the JSON file</li>
-                    <li>Upload the generated file here for analysis</li>
-                  </ol>
-                  <div className="absolute top-2 right-2">
-                    <button 
-                      onClick={() => setShowExtensionTooltip(false)} 
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                      </svg>
-                    </button>
-                  </div>
-                  <div className="absolute -bottom-2 left-5 transform rotate-45 w-4 h-4 bg-white border-b border-r border-gray-200"></div>
-                </div>
-              )}
-              
-              <div className="bg-orange-100 text-orange-600 p-2 rounded-full mb-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="12" y1="8" x2="12" y2="12"></line>
-                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                </svg>
-              </div>
-              <h4 className="font-medium text-orange-800">Tip: Use our TYPO3 extension</h4>
-              <p className="mt-1 text-center text-orange-600">
-                For more accurate analysis, install our <a href="/downloads/typo3_upgrade_analyzer.zip" className="text-orange-700 underline">TYPO3 Upgrade Analyzer</a> extension.
-              </p>
-              <button 
-                onClick={() => setShowExtensionTooltip(!showExtensionTooltip)}
-                className="mt-2 text-xs text-orange-700 underline hover:text-orange-800 focus:outline-none"
-              >
-                View installation instructions
-              </button>
-            </div>
 
-              
-              <div className="bg-orange-50 rounded-md p-4 text-sm border border-orange-200 flex flex-col items-center">
-                <div className="bg-orange-100 text-orange-600 p-2 rounded-full mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <path d="M14 2v6h6"></path>
-                    <path d="M9 16a2 2 0 0 0 0-4"></path>
-                    <path d="M19 12a2 2 0 0 0-2-2H9"></path>
-                    <path d="M13 20a2 2 0 0 0 0-4"></path>
-                    <path d="M21 16a2 2 0 0 0-2-2h-6"></path>
-                  </svg>
-                </div>
-                <h4 className="font-medium text-orange-800">composer.json</h4>
-                <p className="mt-1 text-center text-orange-600">
-                  Upload your composer.json file for basic dependency analysis
-                </p>
-              </div>
+      <div className="space-y-6">
+        {/* File upload section with info blocks */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          {/* Extension Analysis Info */}
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <h3 className="font-medium text-gray-900">Extension Analysis</h3>
             </div>
-            
-                      </div>
-          
-          {file && (
-            <div className="mt-6 bg-orange-50 rounded-md p-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className={`h-6 w-6 ${file.name.endsWith('.zip') ? 'text-orange-500' : 'text-orange-500'}`}
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  >
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            <div className="relative">
+              <p className="text-sm text-gray-600 mb-3">
+                Analyze your TYPO3 extensions for compatibility and upgrade requirements.
+                <span className="relative inline-block ml-2 group">
+                  <svg className="w-5 h-5 text-orange-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900">{file.name}</span>
-                    <span className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                    {extensionData && (
-                      <span className="text-xs text-green-600">TYPO3 data detected!</span>
-                    )}
-                    {file.name.endsWith('.zip') && (
-                      <span className="text-xs text-orange-600">TYPO3 project ZIP file</span>
-                    )}
+                  <div className="opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 absolute left-0 bottom-full mb-2 w-96 p-4 bg-white rounded-lg shadow-lg border border-orange-200 z-50">
+                    <div className="text-sm text-gray-700 mb-2">
+                      <span className="font-medium">Quick Start Guide:</span>
+                    </div>
+                    <a
+                      href="/downloads/project_export.zip"
+                      download
+                      className="inline-flex items-center text-sm text-orange-600 hover:text-orange-700 mb-3"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download Project Export Extension
+                    </a>
+                    <ol className="list-decimal list-inside space-y-1.5 text-xs text-gray-600">
+                      <li>Install the extension</li>
+                      <li>Put the extension in the "typo3conf/ext" folder</li>
+                      <li>in the root composer.json file add: {'{\"repositories\": [{\"type\": \"path\",\"url\": \"typo3conf/ext/project_export\"}]}'}</li>
+                      <li>run command: composer require vendor/project-export:@dev</li>
+                      <li>clear cache: ddev exec typo3cms cache:flush</li>
+                      <li>activate extension: ddev exec typo3cms extension:activate project_export</li>
+                      <li>go to extension manager, generate and download the project analysis file</li>
+                      <li>Upload the file here for detailed compatibility analysis</li>
+                    </ol>
+                    {/* Arrow pointing down */}
+                    <div className="absolute bottom-0 left-4 transform translate-y-full">
+                      <div className="w-3 h-3 bg-white border-b border-r border-orange-200 transform -translate-y-1/2 rotate-45"></div>
+                    </div>
                   </div>
-                </div>
-                <button 
-                  type="button" 
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-gray-500 hover:text-gray-700"
-                  onClick={() => {
-                    setFile(null);
-                    setExtensionData(null);
-                  }}
-                >
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-5 w-5" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-              
-              {fileContent && !extensionData && !file.name.endsWith('.zip') && (
-                <div className="mt-4 text-center">
-                  <button
-                    type="button"
-                    onClick={() => handleAnalyze()}
-                    className="bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-md transition-colors"
-                  >
-                    Analyze File
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Installation Type
-              </label>
-              <div className="flex border border-gray-300 rounded-md max-w-xs">
-                <button
-                  onClick={() => setInstallationType('composer')}
-                  className={`flex-1 px-4 py-2 text-sm ${installationType === 'composer' ? 'bg-orange-100 text-orange-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Composer
-                </button>
-                <button
-                  onClick={() => setInstallationType('non-composer')}
-                  className={`flex-1 px-4 py-2 text-sm border-l ${installationType === 'non-composer' ? 'bg-orange-100 text-orange-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Non-Composer
-                </button>
-              </div>
-              <p className="mt-1 text-sm text-gray-500">
-                {installationType === 'composer' 
-                  ? 'Select if your TYPO3 installation is managed with Composer'
-                  : 'Select if your TYPO3 installation is traditional (non-Composer)'}
-              </p>
-            </div>
-            
-            {/* New Upgrade Method Selector - HIGHLIGHTED */}
-            <div className="md:col-span-2 mt-6 bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
-              <h3 className="text-md font-semibold text-orange-700 mb-3">Choose Upgrade Method:</h3>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="flex border border-gray-300 rounded-md bg-white">
-                  <button
-                    onClick={() => setUpgradeMethod('console')}
-                    className={`px-4 py-2 text-sm font-medium ${upgradeMethod === 'console' ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
-                  >
-                    Console Upgrade
-                  </button>
-                  <button
-                    onClick={() => setUpgradeMethod('admin-panel')}
-                    className={`px-4 py-2 text-sm font-medium border-l ${upgradeMethod === 'admin-panel' ? 'bg-orange-500 text-white' : 'text-gray-700 hover:bg-gray-50'}`}
-                  >
-                    Admin Panel Upgrade
-                  </button>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <strong className="text-gray-700">Currently selected:</strong> {upgradeMethod === 'console' 
-                    ? 'Terminal-based upgrade (requires server access)' 
-                    : 'TYPO3 Admin Panel interface (no terminal required)'}
-                </div>
-              </div>
-            </div>
-            
-            {/* Hide original method selector */}
-            <div className="md:col-span-2 mt-6 hidden">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upgrade Method
-              </label>
-              <div className="flex border border-gray-300 rounded-md max-w-xs">
-                <button
-                  onClick={() => setUpgradeMethod('console')}
-                  className={`flex-1 px-4 py-2 text-sm ${upgradeMethod === 'console' ? 'bg-orange-100 text-orange-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Console Upgrade
-                </button>
-                <button
-                  onClick={() => setUpgradeMethod('admin-panel')}
-                  className={`flex-1 px-4 py-2 text-sm border-l ${upgradeMethod === 'admin-panel' ? 'bg-orange-100 text-orange-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
-                >
-                  Admin Panel Upgrade
-                </button>
-              </div>
-              <p className="mt-1 text-sm text-gray-500">
-                {upgradeMethod === 'console' 
-                  ? 'Select for terminal-based upgrade process with direct file access'
-                  : 'Select for upgrades through the TYPO3 Admin Panel interface'}
+                </span>
               </p>
             </div>
           </div>
+
+          {/* ZIP File Analysis Info */}
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="font-medium text-gray-900">ZIP Analysis</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Upload your TYPO3 project as a ZIP file for comprehensive analysis.
+            </p>
+          </div>
+
+          {/* JSON File Analysis Info */}
+          <div className="bg-orange-50 p-4 rounded-lg">
+            <div className="flex items-center mb-2">
+              <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              <h3 className="font-medium text-gray-900">JSON Analysis</h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Import TYPO3 project data from a JSON export file for detailed analysis.
+            </p>
+          </div>
         </div>
-      )}
+
+        {/* File Upload Area */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+          <div className="text-center">
+            <input
+              type="file"
+              onChange={handleFileChange}
+              accept=".json,.zip,application/json,application/zip,application/x-zip-compressed"
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="cursor-pointer inline-flex flex-col items-center space-y-2"
+            >
+              <div className="p-3 bg-orange-100 rounded-full">
+                <svg
+                  className="w-6 h-6 text-orange-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+              </div>
+              <div className="text-sm text-gray-600">
+                <span className="text-orange-500 font-medium">Click to upload</span> or drag and drop
+              </div>
+              <div className="text-xs text-gray-500">
+                Supported files: TYPO3 project export (.json) or project files (.zip)
+              </div>
+            </label>
+          </div>
+
+          {file && (
+            <div className="mt-4 bg-orange-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <svg
+                    className="w-8 h-8 text-orange-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="font-medium text-gray-900">{file.name}</p>
+                    <p className="text-sm text-gray-500">{Math.round(file.size / 1024)} KB</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setFile(null);
+                    setFileContent(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Manual input option */}
+        <div className="text-center">
+          <p className="text-sm text-gray-500 mb-4">- or -</p>
+          <button
+            onClick={() => setShowManualInput(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+          >
+            <svg
+              className="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Enter System Details Manually
+          </button>
+        </div>
+
+        {showManualInput && (
+          <ManualSystemInput onSaveData={handleManualDataSave} />
+        )}
+
+        {/* Analysis button */}
+        {file && !showManualInput && (
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => handleAnalyze()}
+              className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+            >
+              Analyze Uploaded File
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
-  
+
   const renderAnalyzingStage = () => (
-    <div className="flex flex-col items-center justify-center p-12 bg-gray-50 rounded-lg">
+    <div className="flex flex-col items-center justify-center p-12 bg-white rounded-lg shadow-sm">
       <div className="w-16 h-16 border-4 border-t-orange-600 border-b-orange-600 border-l-transparent border-r-transparent rounded-full animate-spin"></div>
       <p className="mt-6 text-lg font-medium text-gray-700">Analyzing your TYPO3 project...</p>
       <div className="mt-4 max-w-md w-full bg-gray-200 h-2 rounded-full overflow-hidden">
@@ -788,31 +485,41 @@ export default function TYPO3Analysis({ onShowSteps }) {
       <p className="mt-2 text-sm text-gray-500">This may take a few moments</p>
     </div>
   );
-  
+
   const renderResultsStage = () => {
+    if (!analysisResults) {
+      return (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="text-center text-gray-600">
+            No analysis results available. Please try analyzing your project again.
+          </div>
+        </div>
+      );
+    }
+
     // Set the selected strategy to the recommended one initially
     if (selectedStrategy === '' && analysisResults?.upgradeStrategy) {
       setSelectedStrategy(analysisResults.upgradeStrategy.recommendedApproach);
     }
-    
+
     // Check if we need to update compatibility due to same major versions
     if (analysisResults) {
       // Check if source and target version have the same major version
       const currentMajor = parseInt(analysisResults.detectedVersion.split('.')[0], 10);
       const targetMajor = parseInt(targetVersion?.split('.')[0] || '0', 10);
-      
+
       // If they're the same major version, extensions should be compatible
       if (currentMajor === targetMajor && currentMajor >= 10) {
         // Set all extensions to compatible
         analysisResults.extDetails.forEach(ext => {
           ext.isCompatible = true;
         });
-        
+
         // Reset incompatible count to 0
         analysisResults.incompatibleExtensions = 0;
       }
     }
-    
+
     return (
       <div className="space-y-8">
         {/* Upgrade Version Selector Panel - Moved to top */}
@@ -823,7 +530,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
               Select your target TYPO3 version and get a detailed upgrade path with step-by-step instructions.
             </p>
           </div>
-          
+
           <div className="bg-white px-6 py-5 sm:px-8">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
               <div className="flex-1">
@@ -835,22 +542,22 @@ export default function TYPO3Analysis({ onShowSteps }) {
                     TYPO3 {analysisResults.detectedVersion}
                   </div>
                   <div className="ml-2 text-gray-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                       <polyline points="9 18 15 12 9 6"></polyline>
                     </svg>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex-1">
                 <label htmlFor="upgrade-to" className="block text-sm font-medium text-gray-700 mb-1">
                   Target Version
                 </label>
-                <select 
+                <select
                   id="upgrade-to"
                   className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  value={targetVersion} 
+                  value={targetVersion}
                   onChange={(e) => setTargetVersion(e.target.value)}
                 >
                   <option value="7.6">TYPO3 7.6 LTS</option>
@@ -866,14 +573,14 @@ export default function TYPO3Analysis({ onShowSteps }) {
                   <option value="13.4">TYPO3 13.4 LTS</option>
                 </select>
               </div>
-              
+
               <div className="md:ml-4">
                 <button
                   className="w-full md:w-auto px-6 py-3 bg-gradient-to-r from-orange-600 to-orange-700 text-white font-medium rounded-lg shadow hover:from-orange-700 hover:to-orange-800 transition-all flex items-center justify-center"
                   onClick={() => handleGenerateUpgradePath()}
                 >
                   <span>Create Upgrade Path</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 ml-2">
                     <line x1="5" y1="12" x2="19" y2="12"></line>
                     <polyline points="12 5 19 12 12 19"></polyline>
@@ -881,10 +588,10 @@ export default function TYPO3Analysis({ onShowSteps }) {
                 </button>
               </div>
             </div>
-            
+
             <div className="mt-4 bg-orange-50 border-l-4 border-orange-500 p-4 text-sm text-orange-700">
               <div className="flex">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 mr-2 text-orange-500">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="12" y1="16" x2="12" y2="12"></line>
@@ -923,7 +630,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
               Upgrade Complexity: High
             </span>
           </div>
-          
+
           <div className="px-4 py-5 sm:p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-4 rounded-lg border border-gray-200">
@@ -941,7 +648,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                     <span className="font-medium text-red-600">{analysisResults.incompatibleExtensions}</span>
                   </div>
                 </div>
-                
+
                 {/* Display extension list if we have detailed extension data */}
                 {analysisResults.extDetails && analysisResults.extDetails.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
@@ -984,8 +691,8 @@ export default function TYPO3Analysis({ onShowSteps }) {
                                     {ext.version}
                                   </td>
                                   <td className="py-1.5 pr-2">
-                                    {ext.bundled || (ext.name && ext.name.startsWith('typo3/cms-')) ? 
-                                      <span className="text-orange-600">Core</span> : 
+                                    {ext.isCoreExtension ?
+                                      <span className="text-orange-600">Core</span> :
                                       <span className="text-purple-600">Third-party</span>
                                     }
                                   </td>
@@ -1023,7 +730,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                   </div>
                 )}
               </div>
-              
+
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-medium text-gray-500">Deprecated Features</h4>
@@ -1034,7 +741,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                     These features need to be updated before upgrading
                   </div>
                 </div>
-                
+
                 {/* Show system info if available */}
                 {analysisResults.system && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
@@ -1096,7 +803,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                   </div>
                 )}
               </div>
-              
+
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-medium text-gray-500">Upgrade Path</h4>
@@ -1113,12 +820,12 @@ export default function TYPO3Analysis({ onShowSteps }) {
                             // Extract version numbers
                             const fromParts = step.from.split('.');
                             const toParts = step.to.split('.');
-                            
+
                             const fromMajor = parseInt(fromParts[0], 10);
                             const fromMinor = parseInt(fromParts[1] || '0', 10);
                             const toMajor = parseInt(toParts[0], 10);
                             const toMinor = parseInt(toParts[1] || '0', 10);
-                            
+
                             // Either major version is greater, or major is same and minor is greater
                             return toMajor > fromMajor || (toMajor === fromMajor && toMinor > fromMinor);
                           })
@@ -1155,7 +862,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                             </div>
                           ))}
                       </div>
-                      
+
                       <div className="bg-orange-50 border-l-4 border-orange-400 p-3 rounded-md text-xs text-orange-800">
                         <div className="flex">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5">
@@ -1181,7 +888,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Show database info if available */}
                 {analysisResults.database && (
                   <div className="mt-3 pt-3 border-t border-gray-100">
@@ -1208,7 +915,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
             </div>
           </div>
         </div>
-        
+
 
         {/* New Upgrade Strategy Section */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -1218,18 +925,17 @@ export default function TYPO3Analysis({ onShowSteps }) {
               Based on your system data, we recommend the following upgrade approach
             </p>
           </div>
-          
+
           <div className="px-4 py-5 sm:p-6">
             <div className="flex justify-center mb-6">
               <div className="inline-flex rounded-md shadow-sm" role="group">
                 <button
                   type="button"
                   onClick={() => setSelectedStrategy('extensions-first')}
-                  className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-                    selectedStrategy === 'extensions-first' 
-                      ? 'bg-orange-600 text-white' 
+                  className={`px-4 py-2 text-sm font-medium rounded-l-lg ${selectedStrategy === 'extensions-first'
+                      ? 'bg-orange-600 text-white'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   Extensions First
                   {analysisResults.upgradeStrategy.recommendedApproach === 'extensions-first' && (
@@ -1241,11 +947,10 @@ export default function TYPO3Analysis({ onShowSteps }) {
                 <button
                   type="button"
                   onClick={() => setSelectedStrategy('typo3-first')}
-                  className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-                    selectedStrategy === 'typo3-first' 
-                      ? 'bg-orange-600 text-white' 
+                  className={`px-4 py-2 text-sm font-medium rounded-r-lg ${selectedStrategy === 'typo3-first'
+                      ? 'bg-orange-600 text-white'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   TYPO3 First
                   {analysisResults.upgradeStrategy.recommendedApproach === 'typo3-first' && (
@@ -1256,22 +961,22 @@ export default function TYPO3Analysis({ onShowSteps }) {
                 </button>
               </div>
             </div>
-            
+
             <div className="mb-4">
               <h4 className="text-lg font-medium text-gray-800 mb-4">
-                {selectedStrategy === 'extensions-first' 
-                  ? 'Upgrade Extensions First, Then TYPO3' 
+                {selectedStrategy === 'extensions-first'
+                  ? 'Upgrade Extensions First, Then TYPO3'
                   : 'Upgrade TYPO3 First, Then Extensions'}
               </h4>
-              
+
               <div className="relative">
                 {/* Timeline line */}
                 <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-orange-200"></div>
-                
+
                 {/* Steps for the selected approach */}
                 <div className="space-y-8">
-                  {(selectedStrategy === 'extensions-first' 
-                    ? analysisResults.upgradeStrategy.extensionsFirst 
+                  {(selectedStrategy === 'extensions-first'
+                    ? analysisResults.upgradeStrategy.extensionsFirst
                     : analysisResults.upgradeStrategy.typo3First
                   ).map((step, index) => (
                     <div key={index} className="relative flex items-start">
@@ -1287,19 +992,19 @@ export default function TYPO3Analysis({ onShowSteps }) {
                 </div>
               </div>
             </div>
-            
+
             <details className="mt-6 text-sm">
               <summary className="text-orange-600 cursor-pointer">Show alternative approach</summary>
               <div className="mt-4 pl-4 border-l-2 border-gray-200">
                 <h4 className="text-md font-medium text-gray-800 mb-4">
-                  {selectedStrategy !== 'extensions-first' 
-                    ? 'Upgrade Extensions First, Then TYPO3' 
+                  {selectedStrategy !== 'extensions-first'
+                    ? 'Upgrade Extensions First, Then TYPO3'
                     : 'Upgrade TYPO3 First, Then Extensions'}
                 </h4>
-                
+
                 <ol className="list-decimal list-inside space-y-2 pl-4">
-                  {(selectedStrategy !== 'extensions-first' 
-                    ? analysisResults.upgradeStrategy.extensionsFirst 
+                  {(selectedStrategy !== 'extensions-first'
+                    ? analysisResults.upgradeStrategy.extensionsFirst
                     : analysisResults.upgradeStrategy.typo3First
                   ).map((step, index) => (
                     <li key={index} className="text-gray-600">
@@ -1311,9 +1016,9 @@ export default function TYPO3Analysis({ onShowSteps }) {
             </details>
           </div>
         </div>
-        
+
         <div className="mt-8 flex justify-between">
-          <button 
+          <button
             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
             onClick={() => {
               setAnalysisStage('upload');
@@ -1322,8 +1027,8 @@ export default function TYPO3Analysis({ onShowSteps }) {
           >
             Start New Analysis
           </button>
-          
-          <button 
+
+          <button
             className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
             onClick={() => window.print()}
           >
@@ -1334,74 +1039,13 @@ export default function TYPO3Analysis({ onShowSteps }) {
     );
   };
 
-  // Prepare extension data for the upgrade tool
-  const prepareExtensionsForUpgrade = (extDetails) => {
-    if (!extDetails || !Array.isArray(extDetails) || extDetails.length === 0) {
-      return [];
-    }
-    
-    // Map the extension details to the format expected by the upgrade tool
-    const transformedExtensions = extDetails.map(ext => {
-      // For each extension, ensure it has both name and key
-      const extensionName = ext.name || ext.key;
-      const extensionKey = ext.key || extensionName;
-      
-      // Some extensions may be in the format typo3/cms-xxx
-      // or may need to be normalized from extension keys
-      let formattedName = extensionName;
-      
-      // If the name doesn't have a vendor part (no slash), try to identify it
-      if (formattedName && !formattedName.includes('/')) {
-        // Check for core extensions
-        if (formattedName.startsWith('ext_') || formattedName.startsWith('tx_')) {
-          formattedName = formattedName.replace(/^(ext_|tx_)/, '');
-        }
-        
-        // Map common TYPO3 core extensions
-        if (['fluid', 'extbase', 'backend', 'frontend', 'install', 'form', 'felogin', 'scheduler'].includes(formattedName)) {
-          formattedName = `typo3/cms-${formattedName}`;
-        }
-      }
-      
-      return {
-        key: extensionKey,
-        name: formattedName,
-        version: ext.version || '1.0.0',
-        isCompatible: ext.isCompatible !== false, // Default to true if not explicitly false
-        constraints: ext.constraints || {}
-      };
-    });
-    
-    console.log(`Formatted ${transformedExtensions.length} extensions for upgrade:`, transformedExtensions);
-    return transformedExtensions;
-  };
-
-  // Add the missing handleGenerateUpgradePath function
-  const handleGenerateUpgradePath = () => {
-    if (!analysisResults) {
-      return;
-    }
-
-    // Get current version
-    const currentVersion = analysisResults.detectedVersion || '11.5';
-    // Use selected target version
-    const selectedTargetVersion = targetVersion || '12.4';
-    // Get installation type
-    const installType = analysisResults.installationType;
-    // Format extension details for the upgrade tool
-    const formattedExtensions = prepareExtensionsForUpgrade(analysisResults.extDetails);
-    
-    // Pass the upgrade steps to the parent component with extensions
-    onShowSteps(currentVersion, selectedTargetVersion, upgradeMethod, formattedExtensions);
-  };
-  
   // Helper function to generate upgrade steps
   const generateUpgradeSteps = (fromVersion, toVersion, installationType) => {
     const fromMajor = parseInt(fromVersion.split('.')[0], 10);
     const toMajor = parseInt(toVersion.split('.')[0], 10);
-    
+
     const steps = [];
-    
+
     // Add steps for composer installation
     if (installationType === 'composer') {
       steps.push({
@@ -1410,7 +1054,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
         commands: ['tar -czf typo3-backup.tar.gz public/ config/ var/ composer.json composer.lock'],
         complexity: 'low'
       });
-      
+
       steps.push({
         title: 'Update composer dependencies',
         description: `Update TYPO3 core and extensions to version ${toVersion}`,
@@ -1428,7 +1072,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
         commands: ['tar -czf typo3-backup.tar.gz typo3/ typo3conf/ fileadmin/ uploads/'],
         complexity: 'low'
       });
-      
+
       steps.push({
         title: 'Download new TYPO3 version',
         description: `Download TYPO3 ${toVersion}`,
@@ -1442,17 +1086,17 @@ export default function TYPO3Analysis({ onShowSteps }) {
         complexity: 'medium'
       });
     }
-    
+
     // Add database upgrade step
     steps.push({
       title: 'Run database upgrades',
       description: 'Run the database upgrade wizards',
-      commands: installationType === 'composer' ? 
-        ['vendor/bin/typo3 upgrade:run'] : 
+      commands: installationType === 'composer' ?
+        ['vendor/bin/typo3 upgrade:run'] :
         ['typo3/sysext/core/bin/typo3 upgrade:run'],
       complexity: 'medium'
     });
-    
+
     // Add deprecation steps if we're doing a major version upgrade
     if (fromMajor !== toMajor) {
       steps.push({
@@ -1464,7 +1108,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
         complexity: 'high'
       });
     }
-    
+
     // Add final steps
     steps.push({
       title: 'Clear all caches',
@@ -1474,8 +1118,78 @@ export default function TYPO3Analysis({ onShowSteps }) {
         ['typo3/sysext/core/bin/typo3 cache:flush'],
       complexity: 'low'
     });
-    
+
     return steps;
+  };
+
+  // Prepare extension data for the upgrade tool
+  const prepareExtensionsForUpgrade = (extDetails) => {
+    if (!extDetails || !Array.isArray(extDetails)) {
+      return [];
+    }
+
+    // Map the extension details to the format expected by the upgrade tool
+    return extDetails.map(ext => {
+      // Handle both string and object formats
+      if (typeof ext === 'string') {
+        return {
+          key: ext,
+          name: ext,
+          version: 'latest',
+          isCompatible: true,
+          constraints: {}
+        };
+      }
+
+      // For each extension, ensure it has both name and key
+      const extensionName = ext.name || ext.key || '';
+      const extensionKey = ext.key || extensionName || '';
+
+      // Some extensions may be in the format typo3/cms-xxx
+      // or may need to be normalized from extension keys
+      let formattedName = extensionName;
+
+      // If the name doesn't have a vendor part (no slash), try to identify it
+      if (formattedName && typeof formattedName === 'string' && formattedName.indexOf('/') === -1) {
+        // Check for core extensions
+        if (formattedName.startsWith('ext_') || formattedName.startsWith('tx_')) {
+          formattedName = formattedName.replace(/^(ext_|tx_)/, '');
+        }
+
+        // Map common TYPO3 core extensions
+        const coreExtensions = ['fluid', 'extbase', 'backend', 'frontend', 'install', 'form', 'felogin', 'scheduler'];
+        if (coreExtensions.indexOf(formattedName) !== -1) {
+          formattedName = `typo3/cms-${formattedName}`;
+        }
+      }
+
+      return {
+        key: extensionKey,
+        name: formattedName || extensionKey,
+        version: ext.version || 'latest',
+        isCompatible: ext.isCompatible !== false,
+        constraints: ext.constraints || {}
+      };
+    });
+  };
+
+  // Add the missing handleGenerateUpgradePath function
+  const handleGenerateUpgradePath = () => {
+    if (!analysisResults) {
+      return;
+    }
+
+    // Get current version
+    const currentVersion = analysisResults.detectedVersion || '11.5';
+    // Use selected target version
+    const selectedTargetVersion = targetVersion || '12.4';
+    // Get installation type
+    const installType = analysisResults.installationType;
+    // Format extension details for the upgrade tool
+    const formattedExtensions = prepareExtensionsForUpgrade(analysisResults.extDetails);
+
+    // Pass the upgrade steps to the parent component with extensions
+    onShowSteps(currentVersion, selectedTargetVersion, upgradeMethod, formattedExtensions);
   };
 
   return (
@@ -1486,10 +1200,10 @@ export default function TYPO3Analysis({ onShowSteps }) {
         {analysisStage === 'analyzing' && renderAnalyzingStage()}
         {analysisStage === 'processing' && renderProcessingStage()}
         {analysisStage === 'results' && renderResultsStage()}
-        
+
         {analysisStage === 'upload' && (
           <div className="flex justify-end">
-            <button 
+            <button
               className={`px-4 py-2 rounded-md font-medium ${file || detectedVersion ? 'bg-orange-600 text-white hover:bg-orange-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
               onClick={() => handleAnalyze()}
               disabled={!file && !detectedVersion}

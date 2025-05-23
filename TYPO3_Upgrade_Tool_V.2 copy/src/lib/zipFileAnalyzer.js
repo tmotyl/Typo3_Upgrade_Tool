@@ -5,114 +5,157 @@ import JSZip from 'jszip';
  * @param {File} zipFile - The uploaded zip file
  * @returns {Promise<Object>} - Object containing extracted TYPO3 project information
  */
-export async function analyzeTYPO3Zip(zipFile) {
+export const analyzeTYPO3Zip = async (zipFile) => {
   try {
     const zip = new JSZip();
-    const zipContent = await zip.loadAsync(zipFile);
+    const contents = await zip.loadAsync(zipFile);
     
-    // Initialize data structure
-    const data = {
+    let typo3Version = '';
+    let composerInstallation = false;
+    let phpVersion = '';
+    let extensions = [];
+    
+    // Check for composer.json
+    if (contents.files['composer.json']) {
+      composerInstallation = true;
+      const composerJson = JSON.parse(await contents.files['composer.json'].async('string'));
+      
+      // Get TYPO3 version from composer.json
+      if (composerJson.require && composerJson.require['typo3/cms-core']) {
+        typo3Version = composerJson.require['typo3/cms-core'].replace('^', '').replace('~', '');
+      }
+      
+      // Get PHP version from composer.json
+      if (composerJson.require && composerJson.require.php) {
+        phpVersion = composerJson.require.php.replace('^', '').replace('~', '');
+      }
+      
+      // Get extensions from composer.json
+      if (composerJson.require) {
+        Object.keys(composerJson.require).forEach(pkg => {
+          if (pkg.startsWith('typo3/cms-') || 
+              pkg.startsWith('helhum/typo3-console') ||
+              pkg.startsWith('georgringer/') ||
+              pkg.startsWith('in2code/') ||
+              pkg.startsWith('b13/') ||
+              pkg.startsWith('t3/')) {
+            extensions.push({
+              name: pkg,
+              version: composerJson.require[pkg].replace('^', '').replace('~', ''),
+              isComposer: true
+            });
+          }
+        });
+      }
+    }
+    
+    // Check for LocalConfiguration.php
+    const configFiles = Object.keys(contents.files).filter(path => 
+      path.includes('LocalConfiguration.php') || 
+      path.includes('PackageStates.php')
+    );
+    
+    for (const configFile of configFiles) {
+      const content = await contents.files[configFile].async('string');
+      
+      // Try to find TYPO3 version if not found in composer.json
+      if (!typo3Version) {
+        const versionMatch = content.match(/[\'"]((?:\d+\.)?(?:\d+\.)?(?:\*|\d+))['\"]/);
+        if (versionMatch) {
+          typo3Version = versionMatch[1];
+        }
+      }
+      
+      // Find extensions
+      const extensionMatches = content.match(/['"]extensions['"][\s\S]*?\[([\s\S]*?)\]/);
+      if (extensionMatches) {
+        const extensionList = extensionMatches[1].match(/['"]([^'"]+)['"]/g);
+        if (extensionList) {
+          extensionList.forEach(ext => {
+            const extName = ext.replace(/['"]/g, '');
+            if (!extensions.some(e => e.name === extName)) {
+              extensions.push({
+                name: extName,
+                version: 'unknown',
+                isComposer: false
+              });
+            }
+          });
+        }
+      }
+    }
+    
+    // Check for ext_emconf.php files
+    const emconfFiles = Object.keys(contents.files).filter(path => 
+      path.includes('ext_emconf.php')
+    );
+    
+    for (const emconfFile of emconfFiles) {
+      const content = await contents.files[emconfFile].async('string');
+      
+      // Try to extract extension info
+      const titleMatch = content.match(/['"]title['"\s]*=>[\s'"]*([^'"]+)/);
+      const versionMatch = content.match(/['"]version['"\s]*=>[\s'"]*([^'"]+)/);
+      const extensionKey = emconfFile.split('/').slice(-2)[0];
+      
+      if (extensionKey && !extensions.some(e => e.name === extensionKey)) {
+        extensions.push({
+          name: extensionKey,
+          title: titleMatch ? titleMatch[1] : undefined,
+          version: versionMatch ? versionMatch[1] : 'unknown',
+          isComposer: false
+        });
+      }
+    }
+    
+    // If we still don't have a TYPO3 version, try to detect from directory structure
+    if (!typo3Version) {
+      if (contents.files['vendor/typo3/cms-core/']) {
+        typo3Version = '11.5'; // Assume latest LTS if vendor exists
+      } else if (contents.files['typo3/sysext/core/']) {
+        typo3Version = '10.4'; // Assume older LTS for traditional structure
+      }
+    }
+    
+    // Check PHP version from .php files if not found
+    if (!phpVersion) {
+      const phpFiles = Object.keys(contents.files).filter(path => path.endsWith('.php'));
+      for (const phpFile of phpFiles.slice(0, 10)) { // Check first 10 PHP files
+        const content = await contents.files[phpFile].async('string');
+        const versionMatch = content.match(/php[>=]+([0-9.]+)/i);
+        if (versionMatch) {
+          phpVersion = versionMatch[1];
+          break;
+        }
+      }
+    }
+    
+    return {
       timestamp: Date.now(),
       typo3: {
-        version: null,
-        composerInstallation: false,
-        phpVersion: null
+        version: typo3Version || 'unknown',
+        composerInstallation,
+        phpVersion: phpVersion || 'unknown'
       },
-      extensions: [],
+      extensions: extensions.map(ext => ({
+        name: ext.name,
+        version: ext.version,
+        title: ext.title,
+        isComposer: ext.isComposer
+      })),
       system: {
         php: {
-          version: null,
-          platformVersion: null
-        },
-        allowedPlugins: {}
-      },
-      database: {},
-      composerJson: null,
-      files: {
-        totalCount: Object.keys(zipContent.files).length,
-        analyzedPaths: []
+          version: phpVersion || 'unknown',
+          isSupported: true
+        }
       }
     };
     
-    // Check if this is a composer installation
-    const composerJsonFile = findFile(zipContent, 'composer.json');
-    if (composerJsonFile) {
-      // Add to analyzed paths
-      data.files.analyzedPaths.push(composerJsonFile);
-      
-      data.typo3.composerInstallation = true;
-      const composerJsonContent = await zipContent.files[composerJsonFile].async('string');
-      try {
-        const composerJson = JSON.parse(composerJsonContent);
-        data.composerJson = composerJson;
-        
-        // Extract TYPO3 version from composer.json
-        if (composerJson.require && composerJson.require['typo3/cms-core']) {
-          const versionConstraint = composerJson.require['typo3/cms-core'];
-          const versionMatch = versionConstraint.match(/^\^?(\d+\.\d+)/);
-          if (versionMatch) {
-            data.typo3.version = versionMatch[1] + '.0'; // Add .0 as placeholder for patch version
-          }
-        }
-        
-        // Extract PHP version
-        if (composerJson.require && composerJson.require.php) {
-          data.typo3.phpVersion = composerJson.require.php.replace(/^\^?~?/g, '');
-          data.system.php.version = data.typo3.phpVersion;
-        }
-        
-        // Extract PHP platform version
-        if (composerJson.config && composerJson.config.platform && composerJson.config.platform.php) {
-          data.system.php.platformVersion = composerJson.config.platform.php;
-        }
-        
-        // Extract allowed plugins
-        if (composerJson.config && composerJson.config['allow-plugins']) {
-          data.system.allowedPlugins = composerJson.config['allow-plugins'];
-        }
-        
-        // Extract extensions
-        await extractExtensionsFromComposer(zipContent, composerJson, data);
-      } catch (error) {
-        console.error('Error parsing composer.json:', error);
-      }
-    } else {
-      // Non-composer installation
-      data.typo3.composerInstallation = false;
-      
-      // Try to find TYPO3 version from other files
-      await extractTYPO3VersionFromNonComposer(zipContent, data);
-      
-      // Extract extensions from typical ext locations
-      await extractExtensionsFromFolder(zipContent, data);
-    }
-    
-    // Find LocalConfiguration.php to get database info
-    await extractDatabaseInfo(zipContent, data);
-    
-    // Add some key TYPO3 paths to analyzed paths if they exist
-    const keyPaths = [
-      'public/index.php',
-      'index.php',
-      'typo3/index.php',
-      'typo3/sysext/',
-      'typo3conf/',
-      'public/typo3conf/'
-    ];
-    
-    for (const path of keyPaths) {
-      const exists = Object.keys(zipContent.files).some(key => key.startsWith(path));
-      if (exists && !data.files.analyzedPaths.includes(path)) {
-        data.files.analyzedPaths.push(path);
-      }
-    }
-    
-    return data;
   } catch (error) {
-    console.error('Error analyzing zip file:', error);
-    throw error;
+    console.error('Error analyzing ZIP file:', error);
+    throw new Error('Failed to analyze TYPO3 project ZIP file');
   }
-}
+};
 
 /**
  * Find a file in the zip content by pattern

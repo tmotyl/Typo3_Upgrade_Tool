@@ -7,16 +7,19 @@
   "author": "Macopedia <info@macopedia.com> (https://www.macopedia.com)",
   "license": "MIT",
   "scripts": {
+    "start": "react-scripts start",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "update-typo3-data": "node scripts/update-typo3-data.js",
-    "update-typo3-data-axios": "node scripts/update-typo3-axios-data.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@radix-ui/react-select": "^2.2.4",
     "@radix-ui/react-slot": "^1.2.2",
+    "@testing-library/jest-dom": "^5.17.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -24,7 +27,9 @@
     "lucide-react": "^0.508.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tailwind-merge": "^3.2.0"
+    "react-scripts": "5.0.1",
+    "tailwind-merge": "^3.2.0",
+    "web-vitals": "^2.1.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
@@ -52,5 +57,23 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/macopedia/typo3-upgrade-tool"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
