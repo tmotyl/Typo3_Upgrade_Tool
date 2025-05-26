@@ -13,7 +13,37 @@ export async function readProjectData(file) {
         if (file.type === 'application/json' || file.name.endsWith('.json')) {
             // Handle JSON file
             const text = await file.text();
-            return JSON.parse(text);
+            const jsonData = JSON.parse(text);
+            
+            // Check if it's our project data format
+            if (jsonData.TYPO3Version && jsonData.PHPVersion && jsonData.InstalledExtensions) {
+                return {
+                    timestamp: jsonData.ExportTimestamp || Date.now(),
+                    typo3: {
+                        version: jsonData.TYPO3Version,
+                        composerInstallation: true, // Assume composer since we have structured data
+                        phpVersion: jsonData.PHPVersion
+                    },
+                    extensions: jsonData.InstalledExtensions.map(ext => ({
+                        name: ext.ExtensionKey,
+                        version: ext.Version,
+                        vendor: ext.Vendor,
+                        isComposer: ext.Vendor !== 'typo3',
+                        bundled: ext.Vendor === 'typo3'
+                    })),
+                    system: {
+                        php: {
+                            version: jsonData.PHPVersion,
+                            isSupported: true // We'll determine this later
+                        }
+                    },
+                    exportInfo: {
+                        timestamp: jsonData.ExportTimestamp,
+                        exportedBy: jsonData.ExportedBy
+                    }
+                };
+            }
+            return JSON.parse(text); // Fallback to raw JSON if not our format
         } else if (file.name.endsWith('.zip')) {
             // Handle ZIP file using zipFileAnalyzer
             const { analyzeTYPO3Zip } = await import('./zipFileAnalyzer');
@@ -50,8 +80,8 @@ export async function analyzeProject(file) {
 
         // Format extensions to a consistent structure
         const formattedExtensions = extensions.map(ext => {
+            // Handle string-based extension names
             if (typeof ext === 'string') {
-                // For core extensions, use the TYPO3 version
                 const isCoreExtension = [
                     'core', 'extbase', 'fluid', 'install', 'recordlist', 'backend', 'frontend',
                     'dashboard', 'fluid_styled_content', 'filelist', 'impexp', 'form', 'seo',
@@ -62,17 +92,28 @@ export async function analyzeProject(file) {
                 return {
                     name: ext,
                     version: isCoreExtension ? typo3Version : (ext === 'helhum/typo3-console' ? '7.1.2' : '1.0.0'),
+                    vendor: isCoreExtension ? 'typo3' : (ext.includes('/') ? ext.split('/')[0] : 'custom'),
                     isComposer: ext.includes('/'),
                     bundled: isCoreExtension,
                     isCoreExtension: isCoreExtension
                 };
             }
+
+            // Handle object-based extension data
+            const extName = ext.ExtensionKey || ext.name || ext.key || '';
+            const extVersion = ext.Version || ext.version || '1.0.0';
+            const extVendor = ext.Vendor || ext.vendor || '';
+            
+            const isCoreExtension = extVendor === 'typo3' || extName.startsWith('typo3/cms-') || extName.startsWith('core');
+            const isComposer = typeof extName === 'string' && extName.includes('/');
+
             return {
-                name: ext.name || ext.key || ext,
-                version: ext.version || (ext.isCoreExtension ? typo3Version : '1.0.0'),
-                isComposer: (ext.name || ext.key || ext).includes('/'),
-                bundled: (ext.name || ext.key || ext).startsWith('typo3/cms-') || (ext.name || ext.key || ext).startsWith('core'),
-                isCoreExtension: (ext.name || ext.key || ext).startsWith('typo3/cms-') || (ext.name || ext.key || ext).startsWith('core')
+                name: extName,
+                version: isCoreExtension ? typo3Version : extVersion,
+                vendor: extVendor || (isComposer ? extName.split('/')[0] : 'custom'),
+                isComposer: isComposer,
+                bundled: isCoreExtension,
+                isCoreExtension: isCoreExtension
             };
         });
 
@@ -81,22 +122,14 @@ export async function analyzeProject(file) {
                 version: typo3Version,
                 isLTS: isLTSVersion(typo3Version),
                 support: determineTYPO3Support(typo3Version),
-                composerInstallation: projectData.typo3?.composerInstallation || false
+                composerInstallation: projectData.typo3?.composerInstallation || false,
+                phpVersion: phpVersion
             },
             php: {
                 version: phpVersion,
                 isSupported: isPHPVersionSupported(phpVersion)
             },
-            extensions: {
-                systemExtensions: {
-                    count: formattedExtensions.filter(ext => !ext.isComposer).length,
-                    list: formattedExtensions.filter(ext => !ext.isComposer)
-                },
-                composerExtensions: {
-                    count: formattedExtensions.filter(ext => ext.isComposer).length,
-                    list: formattedExtensions.filter(ext => ext.isComposer)
-                }
-            },
+            extensions: formattedExtensions,
             exportInfo: {
                 timestamp: projectData.ExportTimestamp || projectData.timestamp || Date.now(),
                 exportedBy: projectData.ExportedBy || 'System'

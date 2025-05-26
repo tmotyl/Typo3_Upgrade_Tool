@@ -1085,24 +1085,36 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
       // Add each extension to the command if available
       const addedExtensions = [];
       
+      // Add TYPO3 system extensions first
       extensionsList.forEach(ext => {
-        // Skip core as it's already included
-        if (ext.name === 'typo3/cms-core') return;
-        
-        // Get package name from extension
-        const packageName = ext.name || ext.key;
-        
-        // Only add packages with proper names (containing a slash)
-        if (packageName && (packageName.includes('/') || packageName.startsWith('typo3/cms-'))) {
+        if (ext.Vendor === 'typo3' && ext.ExtensionKey !== 'core') {
+          const packageName = `typo3/cms-${ext.ExtensionKey}`;
           command += ` ${packageName}`;
           addedExtensions.push(packageName);
         }
       });
-      
-      // Add a comment about the included extensions to make it clearer
-      if (addedExtensions.length > 0) {
-        command += ` # Included ${addedExtensions.length} extensions in this step`;
-      }
+
+      // Add third-party extensions
+      extensionsList.forEach(ext => {
+        if (ext.Vendor !== 'typo3' && ext.ExtensionKey !== 'core') {
+          let packageName;
+          
+          // Special case for typo3-console
+          if (ext.ExtensionKey === 'helhum/typo3-console' || ext.ExtensionKey === 'typo3-console') {
+            packageName = 'helhum/typo3-console';
+          }
+          // Handle extensions with vendor
+          else if (ext.Vendor && ext.ExtensionKey) {
+            packageName = `${ext.Vendor}/${ext.ExtensionKey.toLowerCase()}`;
+          }
+          
+          // Add package to command if we have a valid name and it's not already added
+          if (packageName && !addedExtensions.includes(packageName)) {
+            command += ` ${packageName}`;
+            addedExtensions.push(packageName);
+          }
+        }
+      });
     }
     
     // Add the with-all-dependencies flag
