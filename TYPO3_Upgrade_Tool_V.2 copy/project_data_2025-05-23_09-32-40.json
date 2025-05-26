@@ -2,35 +2,147 @@
     "TYPO3Version": "11.5.41",
     "PHPVersion": "8.3.19",
     "InstalledExtensions": [
-        "core",
-        "extbase",
-        "fluid",
-        "install",
-        "recordlist",
-        "backend",
-        "frontend",
-        "dashboard",
-        "fluid_styled_content",
-        "filelist",
-        "impexp",
-        "form",
-        "seo",
-        "setup",
-        "rte_ckeditor",
-        "belog",
-        "beuser",
-        "extensionmanager",
-        "felogin",
-        "info",
-        "sys_note",
-        "t3editor",
-        "tstemplate",
-        "viewpage",
-        "news",
-        "helhum\/typo3-console",
-        "project_export",
-        "system_export"
+        {
+            "ExtensionKey": "core",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "extbase",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "fluid",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "install",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "recordlist",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "backend",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "frontend",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "dashboard",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "fluid_styled_content",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "filelist",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "impexp",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "form",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "seo",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "setup",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "rte_ckeditor",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "belog",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "beuser",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "extensionmanager",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "felogin",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "info",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "sys_note",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "t3editor",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "tstemplate",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "viewpage",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "news",
+            "Version": "11.4.3",
+            "Vendor": "georgringer"
+        },
+        {
+            "ExtensionKey": "helhum\/typo3-console",
+            "Version": "v7.1.6",
+            "Vendor": "helhum"
+        },
+        {
+            "ExtensionKey": "project_export",
+            "Version": "1.0.0.0",
+            "Vendor": "vendor"
+        },
+        {
+            "ExtensionKey": "system_export",
+            "Version": "1.0.0.0",
+            "Vendor": "filip"
+        }
     ],
-    "ExportTimestamp": "2025-05-23 09:32:40",
+    "ExportTimestamp": "2025-05-23 10:30:27",
     "ExportedBy": "admin"
 }
