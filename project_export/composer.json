@@ -1,0 +1,14 @@
+{
+  "name": "vendor/project-export",
+  "type": "typo3-cms-extension",
+  "description": "Exports project data to JSON",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "typo3/cms-core": "^11.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Vendor\\ProjectExport\\": "Classes/"
+    }
+  }
+}

@@ -1,0 +1,7 @@
+module.tx_projectexport {
+  view {
+    templateRootPaths.0 = EXT:project_export/Resources/Private/Templates/
+    partialRootPaths.0 = EXT:project_export/Resources/Private/Partials/
+    layoutRootPaths.0 = EXT:project_export/Resources/Private/Layouts/
+  }
+}

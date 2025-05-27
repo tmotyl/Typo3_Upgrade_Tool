@@ -189,17 +189,15 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
                 <div className="bg-gray-50 p-3 rounded text-xs">
                   <div className="grid grid-cols-2 gap-y-1">
                     <div className="text-gray-600">Project Name:</div>
-                    <div className="font-mono">typo3/cms-base-distribution</div>
-                    <div className="text-gray-600">Required PHP:</div>
-                    <div className="font-mono">7.4.1</div>
+                    <div className="font-mono">to develop</div>
                     <div className="text-gray-600">Current PHP Version:</div>
                     <div className="font-mono">{data.PHPVersion || data.typo3?.phpVersion}</div>
                     <div className="text-gray-600">Required TYPO3:</div>
-                    <div className="font-mono">^11.5.0</div>
+                    <div className="font-mono">to fetch from api</div>
                     <div className="text-gray-600">Description:</div>
-                    <div className="font-mono">TYPO3 CMS Base Distribution</div>
+                    <div className="font-mono">to develop</div>
                     <div className="text-gray-600">Type:</div>
-                    <div className="font-mono">Not specified</div>
+                    <div className="font-mono">to develop</div>
                   </div>
                 </div>
               </div>

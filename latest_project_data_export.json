@@ -1,0 +1,174 @@
+{
+    "TYPO3Version": "11.5.41",
+    "PHPVersion": "8.3.19",
+    "DatabaseInfo": {
+        "Driver": "mysqli",
+        "Platform": "mysql",
+        "Version": "10.11.11-MariaDB-ubu2204-log",
+        "DatabaseName": "db",
+        "Host": "db",
+        "Port": "3306",
+        "Type": "MySQL"
+    },
+    "WebServerInfo": {
+        "ServerSoftware": "nginx\/1.26.3",
+        "ServerName": "typo3.ddev.site",
+        "ServerPort": "80",
+        "HTTPS": "Yes",
+        "DocumentRoot": "\/var\/www\/html\/public",
+        "RequestMethod": "POST",
+        "HTTPHost": "typo3.ddev.site:33001",
+        "ServerType": "Nginx",
+        "PHPSAPI": "fpm-fcgi",
+        "OperatingSystem": "Linux",
+        "SystemLoad": [
+            0.34814453125,
+            0.24169921875,
+            0.3125
+        ]
+    },
+    "InstalledExtensions": [
+        {
+            "ExtensionKey": "core",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "extbase",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "fluid",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "install",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "recordlist",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "backend",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "frontend",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "dashboard",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "fluid_styled_content",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "filelist",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "impexp",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "form",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "seo",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "setup",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "rte_ckeditor",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "belog",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "beuser",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "extensionmanager",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "felogin",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "info",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "sys_note",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "t3editor",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "tstemplate",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "viewpage",
+            "Version": "v11.5.41",
+            "Vendor": "typo3"
+        },
+        {
+            "ExtensionKey": "news",
+            "Version": "11.4.3",
+            "Vendor": "georgringer"
+        },
+        {
+            "ExtensionKey": "helhum\/typo3-console",
+            "Version": "v7.1.6",
+            "Vendor": "helhum"
+        },
+        {
+            "ExtensionKey": "project_export",
+            "Version": "1.0.0.0",
+            "Vendor": "vendor"
+        },
+        {
+            "ExtensionKey": "system_export",
+            "Version": "1.0.0.0",
+            "Vendor": "filip"
+        }
+    ],
+    "ExportTimestamp": "2025-05-27 10:15:21",
+    "ExportedBy": "admin"
+}
