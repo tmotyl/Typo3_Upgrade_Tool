@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function ProjectAnalysisResults({ data, onShowSteps }) {
   if (!data) return null;
 
   const [targetVersion, setTargetVersion] = useState('12.4');
+  const [coreExpanded, setCoreExpanded] = useState(false);
+  const [thirdPartyExpanded, setThirdPartyExpanded] = useState(false);
+  const [extensionCompatibility, setExtensionCompatibility] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
 
   // Generate TYPO3 versions from 4.5 to 12.4
   const generateVersions = () => {
@@ -30,6 +34,113 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
     return versions;
   };
 
+  // Function to check TYPO3 version compatibility from package requirements
+  const isCompatibleWithTypo3Version = (requirements, targetVersion) => {
+    if (!requirements || !requirements['typo3/cms-core']) {
+      return 'unknown';
+    }
+    
+    const versionConstraint = requirements['typo3/cms-core'];
+    // Simple version check - can be enhanced for more complex version constraints
+    if (versionConstraint.includes(targetVersion)) {
+      return 'compatible';
+    }
+    return 'incompatible';
+  };
+
+  // Function to fetch package information through the proxy
+  const fetchPackageInfo = async (packageName) => {
+    try {
+      // Use the proxy endpoint instead of direct Packagist API call
+      const response = await fetch(`/api/packagist/${encodeURIComponent(packageName)}`);
+      if (!response.ok) {
+        throw new Error('Package not found');
+      }
+      const data = await response.json();
+      
+      // Extract the latest version information from the Packagist response
+      if (data.packages && data.packages[packageName]) {
+        const versions = Object.keys(data.packages[packageName]);
+        if (versions.length > 0) {
+          const latestVersion = versions[0];
+          return data.packages[packageName][latestVersion];
+        }
+      }
+      throw new Error('Invalid package data format');
+    } catch (error) {
+      console.error(`Error fetching package ${packageName}:`, error);
+      return null;
+    }
+  };
+
+  // Effect to fetch compatibility information when target version changes
+  useEffect(() => {
+    const checkExtensionsCompatibility = async () => {
+      setIsLoading(true);
+      const compatibility = {};
+      
+      const thirdPartyExtensions = data.InstalledExtensions.filter(ext => ext.Vendor !== 'typo3');
+      
+      // List of local extensions that should skip Packagist check
+      const localExtensions = ['vendor/project_export', 'filip/system_export'];
+      
+      // Process extensions in batches to avoid too many concurrent requests
+      const batchSize = 5;
+      for (let i = 0; i < thirdPartyExtensions.length; i += batchSize) {
+        const batch = thirdPartyExtensions.slice(i, i + batchSize);
+        await Promise.all(
+          batch.map(async (ext) => {
+            // Format package name correctly - remove duplicate vendor name if present
+            let packageName = ext.ExtensionKey;
+            if (packageName.startsWith(ext.Vendor + '/')) {
+              packageName = packageName.substring(ext.Vendor.length + 1);
+            }
+            packageName = `${ext.Vendor}/${packageName}`.toLowerCase();
+
+            // Skip Packagist check for local extensions
+            if (localExtensions.includes(packageName)) {
+              compatibility[ext.ExtensionKey] = {
+                status: 'unknown',
+                latestVersion: 'N/A',
+                isLocal: true
+              };
+              return;
+            }
+
+            try {
+              const packageInfo = await fetchPackageInfo(packageName);
+              
+              if (packageInfo) {
+                compatibility[ext.ExtensionKey] = {
+                  status: isCompatibleWithTypo3Version(packageInfo.require, targetVersion),
+                  latestVersion: packageInfo.version,
+                  packageUrl: `https://packagist.org/packages/${packageName}`
+                };
+              } else {
+                compatibility[ext.ExtensionKey] = {
+                  status: 'unknown',
+                  latestVersion: 'N/A'
+                };
+              }
+            } catch (error) {
+              compatibility[ext.ExtensionKey] = {
+                status: 'unknown',
+                latestVersion: 'N/A'
+              };
+            }
+          })
+        );
+      }
+      
+      setExtensionCompatibility(compatibility);
+      setIsLoading(false);
+    };
+
+    if (data.InstalledExtensions?.length > 0) {
+      checkExtensionsCompatibility();
+    }
+  }, [targetVersion, data.InstalledExtensions]);
+
   const handleCreateUpgradePath = () => {
     // Call the onShowSteps prop with the necessary data
     onShowSteps(data.TYPO3Version, targetVersion, 'console', data.InstalledExtensions);
@@ -39,6 +150,50 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
   const extensions = data.InstalledExtensions || [];
   const incompatibleCount = 0; // We'll implement compatibility check later
   const compatibleCount = extensions.length - incompatibleCount;
+
+  const getCompatibilityBadge = (extension) => {
+    const compatibility = extensionCompatibility[extension.ExtensionKey];
+    
+    if (!compatibility) {
+      return (
+        <span className="flex items-center text-gray-500">
+          <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mr-1.5"></span>
+          Checking...
+        </span>
+      );
+    }
+
+    switch (compatibility.status) {
+      case 'compatible':
+        return (
+          <span className="flex items-center text-green-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
+            Compatible
+          </span>
+        );
+      case 'incompatible':
+        return (
+          <span className="flex items-center text-red-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>
+            Incompatible
+          </span>
+        );
+      case 'unknown':
+        return (
+          <span className="flex items-center text-yellow-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-yellow-500 mr-1.5"></span>
+            Unknown
+          </span>
+        );
+      default:
+        return (
+          <span className="flex items-center text-red-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>
+            Error
+          </span>
+        );
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -135,37 +290,121 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
           {/* Extension Compatibility Table - Now Scrollable */}
           <div className="mt-4">
             <h4 className="text-sm font-normal text-gray-700 mb-2">Extension compatibility with TYPO3 {targetVersion} (27)</h4>
-            <div className="bg-white rounded-lg">
-              <div className="max-h-[400px] overflow-y-auto">
-                <table className="min-w-full text-sm">
-                  <thead className="sticky top-0 bg-white">
-                    <tr>
-                      <th className="text-left py-2 text-xs font-normal text-gray-600">Extension</th>
-                      <th className="text-left py-2 text-xs font-normal text-gray-600">Version</th>
-                      <th className="text-left py-2 text-xs font-normal text-gray-600">Type</th>
-                      <th className="text-left py-2 text-xs font-normal text-gray-600">Compatibility</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm">
-                    {data.InstalledExtensions && data.InstalledExtensions.map((ext, idx) => (
-                      <tr key={ext.ExtensionKey || idx}>
-                        <td className="py-1.5 text-gray-900">{ext.ExtensionKey}</td>
-                        <td className="py-1.5 text-gray-600">{ext.Version}</td>
-                        <td className="py-1.5">
-                          <span className="text-purple-600">
-                            {ext.Vendor === 'typo3' ? 'Core' : 'Third-party'}
-                          </span>
-                        </td>
-                        <td className="py-1.5">
-                          <span className="flex items-center text-red-500">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>
-                            Incompatible
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="bg-white rounded-lg space-y-4">
+              {/* Core Extensions Container */}
+              <div>
+                <button 
+                  className="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setCoreExpanded(!coreExpanded)}
+                >
+                  <span className="text-sm font-medium text-gray-700">Core Extensions</span>
+                  <svg 
+                    className={`w-5 h-5 text-gray-500 transform transition-transform ${coreExpanded ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {coreExpanded && (
+                  <div className="mt-2 max-h-[200px] overflow-y-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 bg-white">
+                        <tr>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Extension</th>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Version</th>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Compatibility</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {data.InstalledExtensions && data.InstalledExtensions
+                          .filter(ext => ext.Vendor === 'typo3')
+                          .map((ext, idx) => (
+                            <tr key={ext.ExtensionKey || idx}>
+                              <td className="py-1.5 text-gray-900">{ext.ExtensionKey}</td>
+                              <td className="py-1.5 text-gray-600">{ext.Version}</td>
+                              <td className="py-1.5">
+                                <span className="flex items-center text-red-500">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>
+                                  Incompatible
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Third-party Extensions Container */}
+              <div>
+                <button 
+                  className="w-full flex items-center justify-between p-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setThirdPartyExpanded(!thirdPartyExpanded)}
+                >
+                  <span className="text-sm font-medium text-gray-700">Third-party Extensions</span>
+                  <div className="flex items-center gap-2">
+                    {isLoading && (
+                      <span className="text-xs text-gray-500">Checking compatibility...</span>
+                    )}
+                    <svg 
+                      className={`w-5 h-5 text-gray-500 transform transition-transform ${thirdPartyExpanded ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                {thirdPartyExpanded && (
+                  <div className="mt-2 max-h-[200px] overflow-y-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="sticky top-0 bg-white">
+                        <tr>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Extension</th>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Version</th>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Latest Version</th>
+                          <th className="text-left py-2 text-xs font-normal text-gray-600">Compatibility</th>
+                        </tr>
+                      </thead>
+                      <tbody className="text-sm">
+                        {data.InstalledExtensions && data.InstalledExtensions
+                          .filter(ext => ext.Vendor !== 'typo3')
+                          .map((ext, idx) => {
+                            const compatibility = extensionCompatibility[ext.ExtensionKey];
+                            return (
+                              <tr key={ext.ExtensionKey || idx}>
+                                <td className="py-1.5 text-gray-900">
+                                  {compatibility?.packageUrl ? (
+                                    <a 
+                                      href={compatibility.packageUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      {ext.ExtensionKey}
+                                    </a>
+                                  ) : (
+                                    ext.ExtensionKey
+                                  )}
+                                </td>
+                                <td className="py-1.5 text-gray-600">{ext.Version}</td>
+                                <td className="py-1.5 text-gray-600">
+                                  {compatibility?.latestVersion || 'N/A'}
+                                </td>
+                                <td className="py-1.5">
+                                  {getCompatibilityBadge(ext)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           </div>
