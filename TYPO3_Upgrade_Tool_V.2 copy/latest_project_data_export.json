@@ -1,6 +1,32 @@
 {
     "TYPO3Version": "11.5.41",
     "PHPVersion": "8.3.19",
+    "DatabaseInfo": {
+        "Driver": "mysqli",
+        "Platform": "mysql",
+        "Version": "10.11.11-MariaDB-ubu2204-log",
+        "DatabaseName": "db",
+        "Host": "db",
+        "Port": "3306",
+        "Type": "MySQL"
+    },
+    "WebServerInfo": {
+        "ServerSoftware": "nginx\/1.26.3",
+        "ServerName": "typo3.ddev.site",
+        "ServerPort": "80",
+        "HTTPS": "Yes",
+        "DocumentRoot": "\/var\/www\/html\/public",
+        "RequestMethod": "POST",
+        "HTTPHost": "typo3.ddev.site:33001",
+        "ServerType": "Nginx",
+        "PHPSAPI": "fpm-fcgi",
+        "OperatingSystem": "Linux",
+        "SystemLoad": [
+            0.34814453125,
+            0.24169921875,
+            0.3125
+        ]
+    },
     "InstalledExtensions": [
         {
             "ExtensionKey": "core",
@@ -143,6 +169,6 @@
             "Vendor": "filip"
         }
     ],
-    "ExportTimestamp": "2025-05-23 10:30:27",
+    "ExportTimestamp": "2025-05-27 10:15:21",
     "ExportedBy": "admin"
 }

@@ -32,12 +32,13 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
 
   const handleCreateUpgradePath = () => {
     // Call the onShowSteps prop with the necessary data
-    onShowSteps(data.typo3.version, targetVersion, 'console', data.InstalledExtensions || data.extensions);
+    onShowSteps(data.TYPO3Version, targetVersion, 'console', data.InstalledExtensions);
   };
 
   // Calculate compatibility statistics
-  const incompatibleCount = data.extensions.filter(ext => !ext.isCompatible).length;
-  const compatibleCount = data.extensions.length - incompatibleCount;
+  const extensions = data.InstalledExtensions || [];
+  const incompatibleCount = 0; // We'll implement compatibility check later
+  const compatibleCount = extensions.length - incompatibleCount;
 
   return (
     <div className="space-y-4">
@@ -54,7 +55,7 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
             <div className="text-orange-100">Current Version</div>
             <div className="flex items-center gap-2">
               <div className="px-4 py-2 bg-white/10 text-white rounded w-full">
-                TYPO3 {data.typo3.version}
+                TYPO3 {data.TYPO3Version}
               </div>
               <svg className="w-5 h-5 text-orange-100 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -146,13 +147,13 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
                     </tr>
                   </thead>
                   <tbody className="text-sm">
-                    {data.extensions.map((ext, idx) => (
-                      <tr key={ext.name || idx}>
-                        <td className="py-1.5 text-gray-900">{ext.name}</td>
-                        <td className="py-1.5 text-gray-600">{ext.version}</td>
+                    {data.InstalledExtensions && data.InstalledExtensions.map((ext, idx) => (
+                      <tr key={ext.ExtensionKey || idx}>
+                        <td className="py-1.5 text-gray-900">{ext.ExtensionKey}</td>
+                        <td className="py-1.5 text-gray-600">{ext.Version}</td>
                         <td className="py-1.5">
                           <span className="text-purple-600">
-                            {ext.vendor === 'typo3' ? 'Core' : 'Third-party'}
+                            {ext.Vendor === 'typo3' ? 'Core' : 'Third-party'}
                           </span>
                         </td>
                         <td className="py-1.5">
@@ -184,23 +185,40 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
           <div className="mt-4">
             <h4 className="text-sm font-normal text-gray-700 mb-2">▼ System Information</h4>
             <div className="space-y-4">
+              {/* Database Information */}
               <div>
-                <h5 className="text-sm font-normal mb-2">Composer.json Information</h5>
+                <h5 className="text-sm font-normal mb-2">Database Information</h5>
                 <div className="bg-gray-50 p-3 rounded text-xs">
                   <div className="grid grid-cols-2 gap-y-1">
-                    <div className="text-gray-600">Project Name:</div>
-                    <div className="font-mono">to develop</div>
-                    <div className="text-gray-600">Current PHP Version:</div>
-                    <div className="font-mono">{data.PHPVersion || data.typo3?.phpVersion}</div>
-                    <div className="text-gray-600">Required TYPO3:</div>
-                    <div className="font-mono">to fetch from api</div>
-                    <div className="text-gray-600">Description:</div>
-                    <div className="font-mono">to develop</div>
-                    <div className="text-gray-600">Type:</div>
-                    <div className="font-mono">to develop</div>
+                    <div className="text-gray-600">Database Type:</div>
+                    <div className="font-mono">{data?.DatabaseInfo?.Type}</div>
+                    <div className="text-gray-600">Database Version:</div>
+                    <div className="font-mono">{data?.DatabaseInfo?.Version}</div>
+                    <div className="text-gray-600">Database Platform:</div>
+                    <div className="font-mono">{data?.DatabaseInfo?.Platform}</div>
                   </div>
                 </div>
               </div>
+
+              {/* Web Server Information */}
+              <div>
+                <h5 className="text-sm font-normal mb-2">Web Server Information</h5>
+                <div className="bg-gray-50 p-3 rounded text-xs">
+                  <div className="grid grid-cols-2 gap-y-1">
+                    <div className="text-gray-600">Server Type:</div>
+                    <div className="font-mono">{data?.WebServerInfo?.ServerType}</div>
+                    <div className="text-gray-600">Server Software:</div>
+                    <div className="font-mono">{data?.WebServerInfo?.ServerSoftware}</div>
+                    <div className="text-gray-600">Operating System:</div>
+                    <div className="font-mono">{data?.WebServerInfo?.OperatingSystem}</div>
+                    <div className="text-gray-600">Current PHP Version:</div>
+                    <div className="font-mono">{data.PHPVersion || data.typo3?.phpVersion}</div>
+                    <div className="text-gray-600">Current TYPO3 Version:</div>
+                    <div className="font-mono">{data.TYPO3Version || data.typo3?.version}</div>
+                  </div>
+                </div>
+              </div>
+              {/* Allowed Plugins */}
               <div>
                 <h5 className="text-sm font-normal mb-2">Allowed Plugins:</h5>
                 <div className="bg-gray-50 p-3 rounded text-xs">

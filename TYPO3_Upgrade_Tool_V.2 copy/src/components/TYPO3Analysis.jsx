@@ -49,39 +49,25 @@ export default function TYPO3Analysis({ onShowSteps }) {
     setAnalysisStage('analyzing');
 
     try {
-      // Use the project analyzer to handle both JSON and ZIP files
-      const projectAnalysis = await analyzeProject(selectedFile);
-
-      if (projectAnalysis) {
-        const formattedData = {
-          timestamp: projectAnalysis.exportInfo?.timestamp || projectAnalysis.timestamp,
-          typo3: {
-            version: projectAnalysis.typo3.version,
-            composerInstallation: projectAnalysis.typo3.composerInstallation,
-            phpVersion: projectAnalysis.typo3.phpVersion
-          },
-          system: {
-            php: {
-              version: projectAnalysis.php.version,
-              isSupported: projectAnalysis.php.isSupported
-            }
-          },
-          extensions: projectAnalysis.extensions,
-          exportInfo: {
-            timestamp: projectAnalysis.exportInfo.timestamp,
-            exportedBy: projectAnalysis.exportInfo.exportedBy
-          }
-        };
-
-        setExtensionData(formattedData);
-        setDetectedVersion(formattedData.typo3.version);
-        setInstallationType(formattedData.typo3.composerInstallation ? 'composer' : 'non-composer');
-
-        // Start analysis with the formatted data
-        handleAnalyze(formattedData);
+      if (selectedFile.type === 'application/json' || selectedFile.name.endsWith('.json')) {
+        // Dla plików JSON, czytamy i parsujemy bezpośrednio
+        const text = await selectedFile.text();
+        const jsonData = JSON.parse(text);
+        console.log('Załadowane dane JSON:', jsonData); // Debugging
+        setExtensionData(jsonData);
+        setDetectedVersion(jsonData.TYPO3Version);
+        setAnalysisStage('results');
+      } else {
+        // Dla plików ZIP używamy project analyzer
+        const projectAnalysis = await analyzeProject(selectedFile);
+        if (projectAnalysis) {
+          setExtensionData(projectAnalysis);
+          setDetectedVersion(projectAnalysis.typo3?.version);
+          setAnalysisStage('results');
+        }
       }
     } catch (error) {
-      console.error('Error processing file:', error);
+      console.error('Błąd przetwarzania pliku:', error);
       setAnalysisStage('upload');
     }
   };
@@ -486,7 +472,12 @@ export default function TYPO3Analysis({ onShowSteps }) {
   );
 
   const renderAnalysisResults = () => {
-    if (!extensionData) return null;
+    if (!extensionData) {
+      console.log('Brak danych!'); // Debugging
+      return null;
+    }
+    
+    console.log('Przekazywane dane:', extensionData); // Debugging
     
     return (
       <div className="space-y-6">
