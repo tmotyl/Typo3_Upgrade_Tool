@@ -4,6 +4,7 @@ import TYPO3UpgradeTool from "./components/TYPO3UpgradeTool";
 import { TYPO3VersionInfo } from "./components/TYPO3VersionInfo";
 import TYPO3Analysis from "./components/TYPO3Analysis";
 import Homepage from "./components/Homepage";
+import Contact from "./components/Contact";
 
 function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -40,6 +41,8 @@ function App() {
         />;
       case 'analysis':
         return <TYPO3Analysis onShowSteps={handleShowSteps} />;
+      case 'contact':
+        return <Contact />;
       default:
         return <Homepage onNavigate={handleNavigate} />;
     }
@@ -100,6 +103,15 @@ function App() {
                 <path d="m19 9-5 5-4-4-3 3" />
               </svg>
               Analysis
+            </button>
+            <button 
+              onClick={() => setActiveTab('contact')}
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'contact' ? 'bg-white text-[rgb(249,115,22)]' : 'text-white hover:bg-white/10'}`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Contact
             </button>
           </div>
         </div>
