@@ -686,12 +686,10 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
       {
         title: "Update composer.json to target TYPO3 version",
         commands: upgradeMethod === 'console' ? [
-          // CHANGED: Always use extensionList for all upgrade steps, not just the final one
-          // Previously only used extensions for the final step to target version
-          upgradeCommands[toVersion] || 
-          (extensionList && extensionList.length > 0 
-            ? generateUpgradeCommand(toVersion, extensionList)
-            : `composer require typo3/cms-core:"^${toVersion}" -W`)
+          // Generate command with extensions
+          extensionList && extensionList.length > 0 
+            ? `composer require typo3/cms-core:"^${toVersion}" ${extensionList.map(ext => `${ext.Vendor}/${ext.ExtensionKey}`).join(' ')} -W`
+            : `composer require typo3/cms-core:"^${toVersion}" -W`
         ] : [
           "# Update composer.json file for TYPO3 version upgrade",
           "1. Access your server via SSH or command line terminal",

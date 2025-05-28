@@ -142,8 +142,23 @@ export default function ProjectAnalysisResults({ data, onShowSteps }) {
   }, [targetVersion, data.InstalledExtensions]);
 
   const handleCreateUpgradePath = () => {
-    // Call the onShowSteps prop with the necessary data
-    onShowSteps(data.TYPO3Version, targetVersion, 'console', data.InstalledExtensions);
+    // Extract major.minor version from the full version string
+    const versionParts = data.TYPO3Version.split('.');
+    const majorMinorVersion = `${versionParts[0]}.${versionParts[1]}`;
+
+    // Create an object with all the necessary information
+    const upgradeInfo = {
+      currentVersion: majorMinorVersion, // Use major.minor version instead of full version
+      targetVersion: targetVersion,
+      upgradeMethod: 'console',
+      extensions: data.InstalledExtensions.map(ext => ({
+        ...ext,
+        compatibility: extensionCompatibility[ext.ExtensionKey] || { status: 'unknown', latestVersion: 'N/A' }
+      }))
+    };
+
+    // Call the onShowSteps prop with the complete information
+    onShowSteps(upgradeInfo);
   };
 
   // Calculate compatibility statistics

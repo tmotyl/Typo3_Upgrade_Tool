@@ -12,11 +12,12 @@ function App() {
   const [upgradeMethod, setUpgradeMethod] = useState('console');
   const [extensions, setExtensions] = useState([]);
 
-  const handleShowSteps = (current, target, method, extList = []) => {
-    setCurrentVersion(current);
-    setTargetVersion(target);
-    setUpgradeMethod(method);
-    setExtensions(extList);
+  const handleShowSteps = (upgradeInfo) => {
+    // Extract information from the upgradeInfo object
+    setCurrentVersion(upgradeInfo.currentVersion);
+    setTargetVersion(upgradeInfo.targetVersion);
+    setUpgradeMethod(upgradeInfo.upgradeMethod);
+    setExtensions(upgradeInfo.extensions);
     setActiveTab('path');
   };
 
