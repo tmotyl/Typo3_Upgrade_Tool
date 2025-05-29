@@ -139,7 +139,8 @@ npm run preview
 
 - Open an issue in the GitHub repository
 - Use the Contact form in the React app
-- Author: filip.andrzejczak06@gmail.com
+- Creator/Contributor: filip.andrzejczak06@gmail.com
+- I am giving Author title to the macopedia sp. z o.o
 
 ---
 
