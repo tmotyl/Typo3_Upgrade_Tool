@@ -1,0 +1,87 @@
+Główne komponenty (src/components): 
+
+Aktywnie używane komponenty: 
+
+    Homepage.jsx (7.1KB) - Strona główna aplikacji 
+    
+    TYPO3Analysis.jsx (23KB) - Komponent do analizy systemu TYPO3 
+    
+    TYPO3UpgradeTool.jsx (110KB) - Główne narzędzie do aktualizacji 
+    
+    TYPO3VersionInfo.jsx (22KB) - Informacje o wersjach TYPO3 
+    
+    Contact.jsx (6.9KB) - Formularz kontaktowy 
+
+Komponenty pomocnicze: 
+
+    ProjectAnalysisResults.jsx (24KB) - Wyświetlanie wyników analizy 
+    
+    TYPO3FileAnalyzer.jsx (30KB) - Analiza plików TYPO3 
+    
+    TYPO3UpgradePath.jsx (56KB) - Generowanie ścieżki aktualizacji 
+    
+    TYPO3UpgradeDetails.jsx (14KB) - Szczegóły procesu aktualizacji 
+    
+    ManualSystemInput.jsx (26KB) - Formularz ręcznego wprowadzania danych 
+    
+    UpgradeProjectForm.jsx (16KB) - Formularz konfiguracji aktualizacji 
+
+Komponenty UI (src/components/ui): 
+
+    select.jsx - Komponent wyboru 
+    
+    tabs.jsx - Komponent zakładek 
+    
+    badge.jsx - Komponent etykiet 
+    
+    card.jsx - Komponent kart 
+    
+    input.jsx - Komponent pól wprowadzania 
+
+Komunikacja z API (src/lib): 
+
+  Integracje z zewnętrznymi API: 
+
+    packagist.js (5.4KB) - Komunikacja z API Packagist (repozytorium rozszerzeń) 
+    
+    typo3-axios-scraper.js (33KB) - Pobieranie danych z API TYPO3 
+    
+    typo3-scraper.js (8.6KB) - Alternatywny scraper dla TYPO3 
+
+  Narzędzia analizy: 
+
+    zipFileAnalyzer.js (41KB) - Analiza plików ZIP z projektami 
+    
+    project-analyzer.js (8.3KB) - Analiza struktury projektu 
+    
+    utils.js - Funkcje pomocnicze 
+
+Dane pobierane z API: 
+
+  Z Packagist API: 
+
+    Informacje o rozszerzeniach 
+    
+    Wersje rozszerzeń 
+    
+    Kompatybilność rozszerzeń 
+
+  Z TYPO3 API: 
+
+    Informacje o wersjach TYPO3 
+    
+    Wymagania systemowe 
+    
+    Ścieżki aktualizacji 
+
+Dane mockowane: 
+
+  Lokalne dane testowe: 
+
+    Przykładowe wyniki analizy w ProjectAnalysisResults.jsx 
+    
+    Domyślne ścieżki aktualizacji w TYPO3UpgradePath.jsx 
+    
+    Przykładowe dane systemowe w ManualSystemInput.jsx 
+
+ 
