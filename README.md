@@ -47,13 +47,30 @@ Exports project data (TYPO3 version, PHP version, database, extensions, etc.) as
 - Activate the extension in the TYPO3 Extension Manager.
 - If encountering any problems, add the path to the repository in the root composer.json file:
   ```
+  "require": {
+  	"vendor/project-export": "*"
+	},
   "repositories": [
-		{
-			"type": "path",
-			"url": "public/typo3conf/ext/project_export"
-		}
-  ]
+	{
+		"type": "path",
+		"url": "public/typo3conf/ext/project_export"
+	}
+  ],
   ```
+- run composer update command:
+```bash
+	composer update
+```
+- run require composer command:
+```bash
+	composer require vendor/project-export:*
+```
+- flush cache via command prompt or backend Maintenance panel:
+```bash
+  	./vendor/bin/typo3 cache:flush
+```
+
+---
 
 **Usage:**
 
