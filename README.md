@@ -75,7 +75,7 @@ Exports project data (TYPO3 version, PHP version, database, extensions, etc.) as
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/typo3-upgrade-tool.git
+   git clone https://github.com/tmotyl/Typo3_Upgrade_Tool.git
    cd typo3-upgrade-tool
    ```
 
