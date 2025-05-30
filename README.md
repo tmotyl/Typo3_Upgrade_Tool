@@ -34,9 +34,6 @@ This project consists of two main parts:
 
 ---
 
-
----
-
 ## Getting Started
 
 ### 1. TYPO3 Extension: Project Export
@@ -119,28 +116,10 @@ npm run preview
 
 ---
 
-## Contributing
-
-- Fork the repository
-- Create a feature branch: `git checkout -b feature/your-feature`
-- Commit and push your changes
-- Submit a Pull Request
-
----
-
 ## License
 
 - React App: MIT License
 - TYPO3 Extension: GPL-2.0-or-later
-
----
-
-## Support
-
-- Open an issue in the GitHub repository
-- Use the Contact form in the React app
-- Creator/Contributor: filip.andrzejczak06@gmail.com
-- I am giving Author title to the macopedia sp. z o.o
 
 ---
 
