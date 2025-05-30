@@ -1,6 +1,0 @@
-services:
-  GridElementsTeam\Gridelements\EventListener\ExtTablesInclusionPostProcessing:
-    tags:
-      - name: event.listener
-        identifier: 'gridelements/ext-table-inclusion-post-proc'
-        event: TYPO3\CMS\Core\Configuration\Event\AfterTcaCompilationEvent

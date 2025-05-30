@@ -1,5 +1,0 @@
-
-.. figure:: /Images/Addons/NewsSeo/example.png
-   :class: with-shadow
-
-   Demo of backend

@@ -1,3 +1,0 @@
-
-.. figure:: /Images/ManualScreenshots/Introduction/ExampleOutput.png
-   :class: with-shadow
