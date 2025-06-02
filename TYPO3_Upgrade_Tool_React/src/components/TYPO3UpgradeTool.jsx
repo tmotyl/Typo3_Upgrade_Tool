@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { generateUpgradeCommandAsync } from "../lib/typo3-axios-scraper.js";
 
-export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTargetVersion = '', upgradeMethod = 'console', extensions = [] }) {
+export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTargetVersion = '', upgradeMethod = 'console', extensions = [], initialInstallationType = 'composer' }) {
   const [currentVersion, setCurrentVersion] = useState(initialCurrentVersion);
   const [targetVersion, setTargetVersion] = useState(initialTargetVersion);
   const [upgradePath, setUpgradePath] = useState([]);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [installationType, setInstallationType] = useState('composer'); // 'composer' or 'non-composer'
-  const [allowDowngrade, setAllowDowngrade] = useState(false);
+  const [installationType, setInstallationType] = useState(initialInstallationType); // Use passed installation type
   const [copiedCommand, setCopiedCommand] = useState(null);
   const [expandedSteps, setExpandedSteps] = useState({}); // To track which steps are expanded
   const [expandedSubSteps, setExpandedSubSteps] = useState({}); // To track which substeps are expanded
@@ -217,7 +216,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
     } else {
       setUpgradePath([]);
     }
-  }, [currentVersion, targetVersion, installationType, allowDowngrade, upgradeCommands, currentUpgradeMethod]);
+  }, [currentVersion, targetVersion, installationType, upgradeCommands, currentUpgradeMethod]);
   
   const getVersionObject = (versionString) => {
     // Parse version string to match against our version list
@@ -245,22 +244,20 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
     const targetMajor = parseInt(targetParts[0], 10);
     const targetMinor = targetParts.length > 1 ? parseInt(targetParts[1], 10) : 0;
     
-    // Check if we're downgrading but downgrade is not allowed
-    const isDowngrade = currentMajor > targetMajor || (currentMajor === targetMajor && currentMinor > targetMinor);
-    
-    if (isDowngrade && !allowDowngrade) {
+    // Check if versions are the same
+    if (currentMajor === targetMajor && currentMinor === targetMinor) {
       setUpgradePath([{ 
-        message: 'Downgrading to an older version is not recommended. Enable the downgrade option if you wish to proceed.', 
+        message: 'Current version and target version are the same.', 
         isWarning: true 
       }]);
       setIsCalculating(false);
       return;
     }
-    
-    // Check if versions are the same
-    if (currentMajor === targetMajor && currentMinor === targetMinor) {
+
+    // Check if trying to downgrade
+    if (currentMajor > targetMajor || (currentMajor === targetMajor && currentMinor > targetMinor)) {
       setUpgradePath([{ 
-        message: 'Current version and target version are the same.', 
+        message: 'Downgrading to an older version is not supported.', 
         isWarning: true 
       }]);
       setIsCalculating(false);
@@ -287,133 +284,100 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
       setIsCalculating(false);
       return;
     }
+
+    // Find appropriate LTS versions as stepping stones
+    const ltsVersionsBetween = typo3Versions.filter(v => {
+      const vParts = v.version.split('.');
+      const vMajor = parseInt(vParts[0], 10);
+      return v.lts && vMajor > currentMajor && vMajor <= targetMajor;
+    });
     
-    // Different logic for upgrade vs downgrade
-    if (isDowngrade) {
-      // For downgrade, we'll create a direct path with appropriate warnings
+    // Check if we're within the same major version
+    const isSameMajorVersion = currentMajor === targetMajor;
+    
+    // Only add LTS paths if we're not within the same major version
+    if (ltsVersionsBetween.length > 0 && !isSameMajorVersion) {
+      // Add first step from current to first LTS higher than current
+      const firstLTSHigher = ltsVersionsBetween[0];
+      
+      // Preload upgrade command if we have extensions
+      if (extensionList && extensionList.length > 0) {
+        fetchUpgradeCommand(firstLTSHigher.version);
+      }
+      
       path.push({
         from: startVersion.version,
-        to: endVersion.version,
-        complexity: "Very High",
+        to: firstLTSHigher.version,
+        complexity: getUpgradeComplexity(startVersion.version, firstLTSHigher.version),
         breaking: true,
-        isDowngrade: true,
-        steps: getDowngradeSteps(startVersion.version, endVersion.version, installationType, currentUpgradeMethod),
-        warnings: [
-          "Downgrading is not officially supported by TYPO3",
-          "Data loss is possible during downgrade",
-          "You may need to manually downgrade extensions"
-        ],
+        steps: getUpgradeSteps(startVersion.version, firstLTSHigher.version, installationType, currentUpgradeMethod),
+        extensionsIncluded: extensionList && extensionList.length > 0,
         publishInfo: {
           canPublish: true,
-          message: `After downgrading from ${startVersion.version} to ${endVersion.version}, it's crucial to thoroughly test your website before going public. Downgrading is not officially supported and may cause data loss or functionality issues.`
+          message: `After upgrading from ${startVersion.version} to ${firstLTSHigher.version}, it's recommended to publish and test your website before proceeding to the next upgrade. This will help you identify any issues specific to this upgrade step.`
         }
       });
-    } else {
-      // For upgrade, find appropriate LTS versions as stepping stones
-      const ltsVersionsBetween = typo3Versions.filter(v => {
-        const vParts = v.version.split('.');
-        const vMajor = parseInt(vParts[0], 10);
-        return v.lts && vMajor > currentMajor && vMajor <= targetMajor;
-      });
       
-      // Check if we're within the same major version
-      const isSameMajorVersion = currentMajor === targetMajor;
-      
-      // Check if within the same major version, the target version is older (would be a downgrade)
-      const isInternalDowngrade = isSameMajorVersion && currentMinor > targetMinor;
-      
-      // Only add LTS paths if it's not an internal downgrade within the same major version
-      if (ltsVersionsBetween.length > 0 && !isInternalDowngrade) {
-        // Add first step from current to first LTS higher than current
-        const firstLTSHigher = ltsVersionsBetween[0];
-        
-        // Preload upgrade command if we have extensions (for all steps now, not just the last one)
+      // Add remaining LTS steps
+      for (let i = 1; i < ltsVersionsBetween.length; i++) {
+        // Preload upgrade command for this step too
         if (extensionList && extensionList.length > 0) {
-          fetchUpgradeCommand(firstLTSHigher.version);
+          fetchUpgradeCommand(ltsVersionsBetween[i].version);
         }
         
         path.push({
-          from: startVersion.version,
-          to: firstLTSHigher.version,
-          complexity: getUpgradeComplexity(startVersion.version, firstLTSHigher.version),
+          from: ltsVersionsBetween[i-1].version,
+          to: ltsVersionsBetween[i].version,
+          complexity: getUpgradeComplexity(ltsVersionsBetween[i-1].version, ltsVersionsBetween[i].version),
           breaking: true,
-          steps: getUpgradeSteps(startVersion.version, firstLTSHigher.version, installationType, currentUpgradeMethod),
+          steps: getUpgradeSteps(ltsVersionsBetween[i-1].version, ltsVersionsBetween[i].version, installationType, currentUpgradeMethod),
           extensionsIncluded: extensionList && extensionList.length > 0,
           publishInfo: {
             canPublish: true,
-            message: `After upgrading from ${startVersion.version} to ${firstLTSHigher.version}, it's recommended to publish and test your website before proceeding to the next upgrade. This will help you identify any issues specific to this upgrade step.`
+            message: `After upgrading from ${ltsVersionsBetween[i-1].version} to ${ltsVersionsBetween[i].version}, it's recommended to publish and test your website before proceeding to the next upgrade. This will help you identify any issues specific to this upgrade step.`
           }
         });
-        
-        // Add remaining LTS steps
-        for (let i = 1; i < ltsVersionsBetween.length; i++) {
-          // Preload upgrade command for this step too
-          if (extensionList && extensionList.length > 0) {
-            fetchUpgradeCommand(ltsVersionsBetween[i].version);
-          }
-          
-          path.push({
-            from: ltsVersionsBetween[i-1].version,
-            to: ltsVersionsBetween[i].version,
-            complexity: getUpgradeComplexity(ltsVersionsBetween[i-1].version, ltsVersionsBetween[i].version),
-            breaking: true,
-            steps: getUpgradeSteps(ltsVersionsBetween[i-1].version, ltsVersionsBetween[i].version, installationType, currentUpgradeMethod),
-            extensionsIncluded: extensionList && extensionList.length > 0,
-            publishInfo: {
-              canPublish: true,
-              message: `After upgrading from ${ltsVersionsBetween[i-1].version} to ${ltsVersionsBetween[i].version}, it's recommended to publish and test your website before proceeding to the next upgrade. This will help you identify any issues specific to this upgrade step.`
-            }
-          });
-        }
-        
-        // Add final step to target if needed
-        if (ltsVersionsBetween[ltsVersionsBetween.length - 1].version !== endVersion.version) {
-          // Preload upgrade command for the final step
-          if (extensionList && extensionList.length > 0) {
-            fetchUpgradeCommand(endVersion.version);
-          }
-          
-          path.push({
-            from: ltsVersionsBetween[ltsVersionsBetween.length - 1].version,
-            to: endVersion.version,
-            complexity: getUpgradeComplexity(ltsVersionsBetween[ltsVersionsBetween.length - 1].version, endVersion.version),
-            breaking: !(endVersion.version.split('.')[0] === ltsVersionsBetween[ltsVersionsBetween.length - 1].version.split('.')[0]),
-            steps: getUpgradeSteps(ltsVersionsBetween[ltsVersionsBetween.length - 1].version, endVersion.version, installationType, currentUpgradeMethod),
-            extensionsIncluded: extensionList && extensionList.length > 0,
-            publishInfo: {
-              canPublish: true,
-              message: `After completing the final upgrade to ${endVersion.version}, you should thoroughly test your website before going public with the upgrade.`
-            }
-          });
-        }
-      } else {
-        // If we are trying to do an internal downgrade, show a warning instead
-        if (isInternalDowngrade) {
-          path.push({ 
-            message: `Downgrading from ${currentVersion} to ${targetVersion} within the same major version is not recommended. Enable the downgrade option if you wish to proceed.`, 
-            isWarning: true 
-          });
-        } else {
-          // Direct upgrade (only if there are no LTS versions in between)
-          // Preload upgrade command for direct upgrade
-          if (extensionList && extensionList.length > 0) {
-            fetchUpgradeCommand(endVersion.version);
-          }
-          
-          path.push({
-            from: startVersion.version,
-            to: endVersion.version,
-            complexity: getUpgradeComplexity(startVersion.version, endVersion.version),
-            breaking: startVersion.version.split('.')[0] !== endVersion.version.split('.')[0],
-            steps: getUpgradeSteps(startVersion.version, endVersion.version, installationType, currentUpgradeMethod),
-            extensionsIncluded: extensionList && extensionList.length > 0,
-            publishInfo: {
-              canPublish: true,
-              message: `After completing the upgrade from ${startVersion.version} to ${endVersion.version}, you should thoroughly test your website before going public with the upgrade.`
-            }
-          });
-        }
       }
+      
+      // Add final step to target if needed
+      if (ltsVersionsBetween[ltsVersionsBetween.length - 1].version !== endVersion.version) {
+        // Preload upgrade command for the final step
+        if (extensionList && extensionList.length > 0) {
+          fetchUpgradeCommand(endVersion.version);
+        }
+        
+        path.push({
+          from: ltsVersionsBetween[ltsVersionsBetween.length - 1].version,
+          to: endVersion.version,
+          complexity: getUpgradeComplexity(ltsVersionsBetween[ltsVersionsBetween.length - 1].version, endVersion.version),
+          breaking: !(endVersion.version.split('.')[0] === ltsVersionsBetween[ltsVersionsBetween.length - 1].version.split('.')[0]),
+          steps: getUpgradeSteps(ltsVersionsBetween[ltsVersionsBetween.length - 1].version, endVersion.version, installationType, currentUpgradeMethod),
+          extensionsIncluded: extensionList && extensionList.length > 0,
+          publishInfo: {
+            canPublish: true,
+            message: `After completing the final upgrade to ${endVersion.version}, you should thoroughly test your website before going public with the upgrade.`
+          }
+        });
+      }
+    } else {
+      // Direct upgrade (only if there are no LTS versions in between)
+      // Preload upgrade command for direct upgrade
+      if (extensionList && extensionList.length > 0) {
+        fetchUpgradeCommand(endVersion.version);
+      }
+      
+      path.push({
+        from: startVersion.version,
+        to: endVersion.version,
+        complexity: getUpgradeComplexity(startVersion.version, endVersion.version),
+        breaking: startVersion.version.split('.')[0] !== endVersion.version.split('.')[0],
+        steps: getUpgradeSteps(startVersion.version, endVersion.version, installationType, currentUpgradeMethod),
+        extensionsIncluded: extensionList && extensionList.length > 0,
+        publishInfo: {
+          canPublish: true,
+          message: `After completing the upgrade from ${startVersion.version} to ${endVersion.version}, you should thoroughly test your website before going public with the upgrade.`
+        }
+      });
     }
     
     setUpgradePath(path);
@@ -1021,10 +985,10 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
       metadataElement.className = 'print-metadata';
       metadataElement.innerHTML = `
         <div style="display:none;" class="print:block print:mb-4">
-          <h1 class="text-xl font-bold">TYPO3 ${upgradePath.some(step => step.isDowngrade) ? 'Downgrade' : 'Upgrade'} Guide</h1>
+          <h1 class="text-xl font-bold">TYPO3 Upgrade Path</h1>
           <p>From version ${currentVersion} to ${targetVersion}</p>
           <p>Installation type: ${installationType === 'composer' ? 'Composer' : 'Non-Composer'}</p>
-          <p>Upgrade method: ${currentUpgradeMethod === 'console' ? 'Console (Terminal)' : 'Admin Panel'}</p>
+          <p>Upgrade method: ${currentUpgradeMethod === 'console' ? 'Console' : 'Admin Panel'}</p>
           <p>Generated: ${new Date().toLocaleString()}</p>
           <p>© ${new Date().getFullYear()} Macopedia</p>
         </div>
@@ -1121,6 +1085,13 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
     return command;
   };
 
+  // Use initialInstallationType when it changes
+  useEffect(() => {
+    if (initialInstallationType && initialInstallationType !== installationType) {
+      setInstallationType(initialInstallationType);
+    }
+  }, [initialInstallationType]);
+
   return (
     <div className="bg-white rounded-lg shadow p-6 print:shadow-none print:p-0">
       <div className="max-w-3xl mx-auto">
@@ -1128,7 +1099,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
         <div className="hidden print:block print:mb-8 print:border-b print:border-gray-300 print:pb-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-black">TYPO3 {upgradePath.some(step => step.isDowngrade) ? 'Downgrade' : 'Upgrade'} Path</h1>
+              <h1 className="text-2xl font-bold text-black">TYPO3 Upgrade Path</h1>
               <p className="text-gray-600">From version {currentVersion} to {targetVersion}</p>
             </div>
             <div className="text-right">
@@ -1221,19 +1192,6 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
               </button>
             </div>
           </div>
-          
-          <div className="flex items-center">
-            <input
-              id="allow-downgrade"
-              type="checkbox"
-              checked={allowDowngrade}
-              onChange={() => setAllowDowngrade(!allowDowngrade)}
-              className="h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-            />
-            <label htmlFor="allow-downgrade" className="ml-2 text-sm text-gray-700">
-              Allow Downgrade Path (not recommended)
-            </label>
-          </div>
         </div>
         
         {/* Upgrade Method selector - HIGHLIGHTED */}
@@ -1297,7 +1255,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-8 print:border-0">
             <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 print:bg-white">
               <h3 className="text-base font-medium text-gray-700 print:text-black">
-                {upgradePath.some(step => step.isDowngrade) ? 'Downgrade Path' : 'Upgrade Path'}
+                Upgrade Path
               </h3>
             </div>
             
@@ -1347,13 +1305,8 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                   <div className="flex items-center justify-between pb-2 border-b border-gray-100 print:border-black">
                     <div>
                       <span className="inline-flex items-center rounded-full bg-orange-50 px-2 py-1 text-xs font-medium text-orange-700 ring-1 ring-inset ring-orange-600/20 print:bg-white print:border print:border-black print:text-black">
-                        {upgradePath.length} Step{upgradePath.length !== 1 ? 's' : ''}
+                        {upgradePath.length} Stage{upgradePath.length !== 1 ? 's' : ''}
                       </span>
-                      {upgradePath.some(step => step.isDowngrade) && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20 print:bg-white print:border print:border-black print:text-black">
-                          Downgrade
-                        </span>
-                      )}
                       <span className="ml-2 inline-flex items-center rounded-full bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-600/20 print:bg-white print:border print:border-black print:text-black">
                         {installationType === 'composer' ? 'Composer' : 'Non-Composer'}
                       </span>
@@ -1476,7 +1429,6 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                             <div className="flex">
                               <div className="flex-shrink-0 bg-white">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                                  step.isDowngrade ? 'border-red-500 bg-red-50' :
                                   step.complexity === 'Low' ? 'border-green-500 bg-green-50' : 
                                   step.complexity === 'Medium' ? 'border-yellow-500 bg-yellow-50' : 
                                   'border-red-500 bg-red-50'
@@ -1485,7 +1437,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                                 </div>
                               </div>
                               <div className="ml-4 flex-1">
-                                <div className={`p-4 border rounded-lg ${step.isDowngrade ? 'bg-red-50 text-red-800 border-red-200' : getComplexityColor(step.complexity)} print:border-black print:bg-white print:text-black`}>
+                                <div className={`p-4 border rounded-lg ${step.complexity === 'Low' ? 'bg-green-50 text-green-800 border-green-200' : getComplexityColor(step.complexity)} print:border-black print:bg-white print:text-black`}>
                                   <div 
                                     className="flex justify-between items-start mb-2 cursor-pointer hover:opacity-80 transition-opacity group"
                                     onClick={() => toggleStepExpansion(index)}
@@ -1495,7 +1447,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                                     </h4>
                                     <div className="flex items-center gap-2">
                                       <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-white bg-opacity-60 print:border print:border-black">
-                                        {step.isDowngrade ? 'Downgrade' : `${step.complexity} Complexity`}
+                                        {step.complexity} Complexity
                                       </span>
                                       <svg 
                                         xmlns="http://www.w3.org/2000/svg" 
@@ -1595,7 +1547,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                                         </div>
                                       </div>
                                       
-                                      {step.isDowngrade && step.warnings && (
+                                      {step.warnings && (
                                         <div className="mt-4 bg-red-100 p-3 rounded-md print:bg-white print:border print:border-black">
                                           <h5 className="text-sm font-medium mb-1 text-red-800 print:text-black">Warnings:</h5>
                                           <ul className="list-disc ml-5 text-sm space-y-1 text-red-800 print:text-black">
@@ -1671,15 +1623,13 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                                 </h4>
                                 <div className="flex items-center">
                                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                                    upgradePath[currentStepIndex].isDowngrade 
-                                      ? 'bg-red-100 text-red-700' 
-                                      : upgradePath[currentStepIndex].complexity === 'Low' 
-                                        ? 'bg-green-100 text-green-700' 
-                                        : upgradePath[currentStepIndex].complexity === 'Medium' 
-                                          ? 'bg-yellow-100 text-yellow-700'
-                                          : 'bg-red-100 text-red-700'
+                                    upgradePath[currentStepIndex].complexity === 'Low' 
+                                      ? 'bg-green-100 text-green-700' 
+                                      : upgradePath[currentStepIndex].complexity === 'Medium' 
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-red-100 text-red-700'
                                   }`}>
-                                    {upgradePath[currentStepIndex].isDowngrade ? 'Downgrade' : `${upgradePath[currentStepIndex].complexity} Complexity`}
+                                    {upgradePath[currentStepIndex].complexity} Complexity
                                   </span>
                                 </div>
                               </div>
@@ -1766,7 +1716,7 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                                 )}
                                 
                                 {/* Warning messages if downgrading */}
-                                {upgradePath[currentStepIndex].isDowngrade && upgradePath[currentStepIndex].warnings && (
+                                {upgradePath[currentStepIndex].warnings && (
                                   <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
                                     <h5 className="text-sm font-medium mb-2 text-red-800">Warnings:</h5>
                                     <ul className="list-disc ml-5 text-sm space-y-1 text-red-800">
@@ -1917,12 +1867,11 @@ export default function TYPO3UpgradeTool({ initialCurrentVersion = '', initialTa
                                       <span className="block truncate">{step.from} → {step.to}</span>
                                       {step.complexity && (
                                         <span className={`inline-block mt-1 text-xs px-1.5 py-0.5 rounded-full ${
-                                          step.isDowngrade ? 'bg-red-100 text-red-700' :
                                           step.complexity === 'Low' ? 'bg-green-100 text-green-700' :
                                           step.complexity === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
                                           'bg-red-100 text-red-700'
                                         }`}>
-                                          {step.isDowngrade ? 'Downgrade' : `${step.complexity} Complexity`}
+                                          {step.complexity} Complexity
                                         </span>
                                       )}
                                     </button>

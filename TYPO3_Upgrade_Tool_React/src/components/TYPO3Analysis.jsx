@@ -5,6 +5,7 @@ import { analyzeTYPO3Zip } from '../lib/zipFileAnalyzer';
 import { fetchPackagistPackageInfo } from '../lib/packagist';
 import { getExtensionMappings, getExtensionMappingsAsync, fetchPackagistInfo } from '../lib/typo3-axios-scraper.js';
 import { analyzeProject } from '../lib/project-analyzer.js';
+import TYPO3UpgradeTool from './TYPO3UpgradeTool';
 
 export default function TYPO3Analysis({ onShowSteps }) {
   const [file, setFile] = useState(null);
@@ -19,6 +20,8 @@ export default function TYPO3Analysis({ onShowSteps }) {
   const [selectedStrategy, setSelectedStrategy] = useState(''); // Track which strategy the user has selected
   const [showExtensionTooltip, setShowExtensionTooltip] = useState(false); // State for extension installation tooltip
   const [upgradeMethod, setUpgradeMethod] = useState('console'); // 'console' or 'admin-panel'
+  const [showUpgradeTool, setShowUpgradeTool] = useState(false);
+  const [upgradeInfo, setUpgradeInfo] = useState({});
 
   useEffect(() => {
     // No need to load project data automatically anymore
@@ -251,96 +254,67 @@ export default function TYPO3Analysis({ onShowSteps }) {
     }
   }, [targetVersion, analysisResults?.detectedVersion]);
 
+  const handleShowSteps = (upgradeInfo) => {
+    setShowUpgradeTool(true);
+    setUpgradeInfo({
+      currentVersion: upgradeInfo.currentVersion,
+      targetVersion: upgradeInfo.targetVersion,
+      extensions: upgradeInfo.extensions,
+      installationType: upgradeInfo.installationType // Store the installation type
+    });
+  };
+
   const renderUploadStage = () => (
     <div className="bg-white rounded-lg shadow-md p-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Project Analysis</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Upgrade Path Assistant</h2>
         <p className="text-gray-600">
-          Upload your project files for analysis
+          Upload your project files for project overview and personalized upgrade steps
         </p>
+        <div className="relative mt-4">
+          <span className="relative inline-block group">
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-orange-500 cursor-help inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-sm text-orange-600 cursor-help">Download our project data extacting extension</span>
+            </span>
+            <div className="opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 absolute left-1/2 transform -translate-x-1/2 bottom-full mb-2 w-96 p-4 bg-white rounded-lg shadow-lg border border-orange-200 z-50">
+              <div className="text-sm text-gray-700 mb-2">
+                <span className="font-medium">Quick Start Guide:</span>
+              </div>
+              <a
+                href="/downloads/project_export.zip"
+                download
+                className="inline-flex items-center text-sm text-orange-600 hover:text-orange-700 mb-3"
+              >
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Download Project Export Extension
+              </a>
+              <div className="text-xs text-gray-600">
+                <ol className="list-decimal list-inside space-y-1.5">
+                  <li>Install the extension</li>
+                  <li>Put the extension in the "typo3conf/ext" folder</li>
+                  <li>in the root composer.json file add: {'{\"repositories\": [{\"type\": \"path\",\"url\": \"typo3conf/ext/project_export\"}]}'}</li>
+                  <li>run command: composer require vendor/project-export:@dev</li>
+                  <li>clear cache: ddev exec typo3cms cache:flush</li>
+                  <li>activate extension: ddev exec typo3cms extension:activate project_export</li>
+                  <li>go to extension manager, generate and download the project analysis file</li>
+                  <li>Upload the file here for detailed compatibility analysis</li>
+                </ol>
+              </div>
+              {/* Arrow pointing down */}
+              <div className="absolute bottom-0 left-1/2 transform translate-y-full -translate-x-1/2">
+                <div className="w-3 h-3 bg-white border-b border-r border-orange-200 transform -translate-y-1/2 rotate-45"></div>
+              </div>
+            </div>
+          </span>
+        </div>
       </div>
 
       <div className="space-y-6">
-        {/* File upload section with info blocks */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          {/* Extension Analysis Info */}
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              <h3 className="font-medium text-gray-900">Extension Analysis</h3>
-            </div>
-            <div className="relative">
-              <p className="text-sm text-gray-600 mb-3">
-                Analyze your TYPO3 extensions for compatibility and upgrade requirements.
-              </p>
-              <span className="relative inline-block ml-2 group">
-                <svg className="w-5 h-5 text-orange-500 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div className="opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 absolute left-0 bottom-full mb-2 w-96 p-4 bg-white rounded-lg shadow-lg border border-orange-200 z-50">
-                  <div className="text-sm text-gray-700 mb-2">
-                    <span className="font-medium">Quick Start Guide:</span>
-                  </div>
-                  <a
-                    href="/downloads/project_export.zip"
-                    download
-                    className="inline-flex items-center text-sm text-orange-600 hover:text-orange-700 mb-3"
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download Project Export Extension
-                  </a>
-                  <div className="text-xs text-gray-600">
-                    <ol className="list-decimal list-inside space-y-1.5">
-                      <li>Install the extension</li>
-                      <li>Put the extension in the "typo3conf/ext" folder</li>
-                      <li>in the root composer.json file add: {'{\"repositories\": [{\"type\": \"path\",\"url\": \"typo3conf/ext/project_export\"}]}'}</li>
-                      <li>run command: composer require vendor/project-export:@dev</li>
-                      <li>clear cache: ddev exec typo3cms cache:flush</li>
-                      <li>activate extension: ddev exec typo3cms extension:activate project_export</li>
-                      <li>go to extension manager, generate and download the project analysis file</li>
-                      <li>Upload the file here for detailed compatibility analysis</li>
-                    </ol>
-                  </div>
-                  {/* Arrow pointing down */}
-                  <div className="absolute bottom-0 left-4 transform translate-y-full">
-                    <div className="w-3 h-3 bg-white border-b border-r border-orange-200 transform -translate-y-1/2 rotate-45"></div>
-                  </div>
-                </div>
-              </span>
-            </div>
-          </div>
-
-          {/* ZIP File Analysis Info */}
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="font-medium text-gray-900">ZIP Analysis</h3>
-            </div>
-            <p className="text-sm text-gray-600">
-              Upload your TYPO3 project as a ZIP file for comprehensive analysis.
-            </p>
-          </div>
-
-          {/* JSON File Analysis Info */}
-          <div className="bg-orange-50 p-4 rounded-lg">
-            <div className="flex items-center mb-2">
-              <svg className="w-6 h-6 text-orange-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-              <h3 className="font-medium text-gray-900">JSON Analysis</h3>
-            </div>
-            <p className="text-sm text-gray-600">
-              Import TYPO3 project data from a JSON export file for detailed analysis.
-            </p>
-          </div>
-        </div>
-
         {/* File Upload Area */}
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
           <div className="text-center">
@@ -374,7 +348,7 @@ export default function TYPO3Analysis({ onShowSteps }) {
                 <span className="text-orange-500 font-medium">Click to upload</span> or drag and drop
               </div>
               <div className="text-xs text-gray-500">
-                Supported files: TYPO3 project export (.json) or project files (.zip)
+                Supported files: TYPO3 project export (.json)
               </div>
             </label>
           </div>
@@ -415,6 +389,27 @@ export default function TYPO3Analysis({ onShowSteps }) {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Installation Type Selection */}
+        <div className="mt-6 mb-6 p-4 bg-orange-50 rounded-lg">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-gray-700">Installation Type:</span>
+            <div className="flex border border-gray-300 rounded-md">
+              <button 
+                onClick={() => setInstallationType('composer')}
+                className={`px-3 py-1.5 text-sm ${installationType === 'composer' ? 'bg-orange-100 text-orange-700 border-orange-500' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                Composer
+              </button>
+              <button 
+                onClick={() => setInstallationType('non-composer')}
+                className={`px-3 py-1.5 text-sm border-l ${installationType === 'non-composer' ? 'bg-orange-100 text-orange-700 border-orange-500' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                Non-Composer
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Manual input option */}
@@ -484,22 +479,8 @@ export default function TYPO3Analysis({ onShowSteps }) {
         <ProjectAnalysisResults 
           data={extensionData} 
           onShowSteps={onShowSteps}
+          installationType={installationType}
         />
-        
-        {/* Upgrade Options */}
-        {detectedVersion && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-4">Upgrade Options</h3>
-            <div className="space-y-4">
-              <button
-                onClick={() => onShowSteps(extensionData)}
-                className="w-full px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
-              >
-                View Upgrade Steps
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -507,19 +488,21 @@ export default function TYPO3Analysis({ onShowSteps }) {
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
       {/* Header */}
-      <header className="typo3-header mb-6">
-        <div className="container mx-auto px-4 py-2">
-          <div className="flex items-center">
-            <h1 className="typo3-logo">TYPO3 Site Analyzer</h1>
-          </div>
-        </div>
-      </header>
 
       <div className="container mx-auto px-4">
         {analysisStage === 'upload' && renderUploadStage()}
         {analysisStage === 'analyzing' && renderAnalyzingStage()}
         {analysisStage === 'results' && renderAnalysisResults()}
       </div>
+
+      {showUpgradeTool && (
+        <TYPO3UpgradeTool
+          initialCurrentVersion={upgradeInfo.currentVersion}
+          initialTargetVersion={upgradeInfo.targetVersion}
+          extensions={upgradeInfo.extensions}
+          initialInstallationType={upgradeInfo.installationType}
+        />
+      )}
     </div>
   );
 } 

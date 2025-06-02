@@ -20,7 +20,7 @@ This project consists of two main parts:
 
 ### React App
 
-- �� **Site Analysis:** Scan your TYPO3 installation for compatibility issues.
+- 🛠️ **Site Analysis:** Scan your TYPO3 installation for compatibility issues.
 - 📊 **Extension Compatibility Check:** Verify extension compatibility with target TYPO3 versions.
 - 🛣️ **Upgrade Path Generation:** Get detailed, step-by-step upgrade instructions.
 - 📦 **Package Management:** Integration with Packagist for extension information.
@@ -103,19 +103,23 @@ Exports project data (TYPO3 version, PHP version, database, extensions, etc.) as
    ```bash
    npm install
    ```
-
 **Development:**
 
+Start Proxy Server
 ```bash
-npm run dev
+    node src/server/proxy.js   
+```
+
+```bash
+    npm run dev
 ```
 App runs at `http://localhost:5173`
 
 **Build for Production:**
 
 ```bash
-npm run build
-npm run preview
+    npm run build
+    npm run preview
 ```
 App runs at `http://localhost:4173`
 

@@ -345,7 +345,24 @@ export function TYPO3VersionInfo() {
                         <div className="bg-gray-50 p-2 rounded flex flex-col items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-orange-600 mb-1"><path d="M3 6h18M7 12h10M5 18h14"></path></svg>
                           <span className="text-xs text-gray-500">PHP</span>
-                          <span className="text-xs font-semibold">{version.requirements.php}</span>
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs font-medium">
+                              {version.requirements.php.min !== 'Unknown' && (
+                                <>
+                                  <span className="text-green-600">{version.requirements.php.min}</span>
+                                  {version.requirements.php.max !== 'Unknown' && (
+                                    <>
+                                      <span className="text-gray-400 mx-1">-</span>
+                                      <span className="text-amber-600">{version.requirements.php.max}</span>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                              {version.requirements.php.min === 'Unknown' && (
+                                <span className="text-gray-400">Not specified</span>
+                              )}
+                            </span>
+                          </div>
                         </div>
                         <div className="bg-gray-50 p-2 rounded flex flex-col items-center justify-center">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-orange-600 mb-1"><path d="M4 6h16M4 12h16M4 18h12"></path></svg>

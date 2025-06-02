@@ -54,7 +54,7 @@ function App() {
         <div className="container mx-auto px-4 py-5">
           <div className="flex items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold">TYPO3 Upgrade Tool</h1>
+              <h1 className="text-3xl font-bold">TYPO3 Upgrade Assistant</h1>
               <p className="text-white mt-1">Analyze and prepare your TYPO3 upgrades with ease</p>
             </div>
           </div>

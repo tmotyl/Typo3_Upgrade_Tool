@@ -48,6 +48,8 @@ Komunikacja z API (src/lib):
     
     typo3-scraper.js (8.6KB) - Alternatywny scraper dla TYPO3 
 
+    server/proxy.js - serwer proxy pomagający w pozyskaniu danych z typo3 api
+
   Narzędzia analizy: 
 
     zipFileAnalyzer.js (41KB) - Analiza plików ZIP z projektami 

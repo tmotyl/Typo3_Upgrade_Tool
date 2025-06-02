@@ -30,23 +30,7 @@ export default function Homepage({ onNavigate }) {
       </section>
 
       {/* Feature blocks */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4">
-            <Server className="w-7 h-7 text-[rgb(249,115,22)]" />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Site Analysis</h3>
-          <p className="text-gray-600">
-            Upload your TYPO3 files and get a detailed analysis of your current installation,
-            including version detection and extension compatibility.
-          </p>
-          <button 
-            onClick={() => onNavigate('analysis')}
-            className="mt-4 text-[rgb(249,115,22)] font-medium flex items-center gap-1 hover:underline"
-          >
-            Analyze Site <ArrowRight size={16} />
-          </button>
-        </div>
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
           <div className="w-14 h-14 bg-orange-100 rounded-full flex items-center justify-center mb-4">
@@ -58,7 +42,7 @@ export default function Homepage({ onNavigate }) {
             with detailed instructions for each stage.
           </p>
           <button 
-            onClick={() => onNavigate('path')}
+            onClick={() => onNavigate('analysis')}
             className="mt-4 text-[rgb(249,115,22)] font-medium flex items-center gap-1 hover:underline"
           >
             Plan Upgrade <ArrowRight size={16} />
